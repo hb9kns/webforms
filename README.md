@@ -1,7 +1,7 @@
 # webforms
 
-A small script for dynamic web forms using a flat file database,
-all purely server-side!
+CGI script for dynamic web forms using a flat file database,
+only server-side
 
 ## Introduction
 
