@@ -10,7 +10,6 @@ _-Yargo_
 
 ### Ideen/Plan
 
-- mehrere Seiten moeglich, welche gemeinsame Basis teilen, evtl mit Get/Post-Argument oder fixem Seitennamen (wrapper CGI)
 - Basisdatei: Flag `+-*` , Indexnr, Name und weitere Infos
 - ignoriert: Kommentarzeilen mit `#` und Leerzeilen
 - jedes Basiselement genau 0 oder 1 mal pro Seite vorhanden
@@ -24,3 +23,4 @@ _-Yargo_
 - Del-Knopf: Rueckfrage mit Anzeige des Basis-Feldes
 - Footer: Neu-Knopf, erzeugt leeres Formular wie Edit-Knopf
 - Basis-Edit: Tabelle wie fuer Seitn, aber Umblend- statt Del-Knopf (aendert Flag)
+- Funktion fuer Auswertung Query-String: Var.name als Argument, entspr Wert zurueck mit Escape-Konversion durch sed (nach Umsetzung &->TAB), aber nur bestimmte Werte, andere geloescht/ignoriert
