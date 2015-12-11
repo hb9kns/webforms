@@ -17,7 +17,7 @@ exit 9
 fi
 
 # set root for temporary files
-TMPR=${TMP:/tmp}/webformtmp$0
+TMPR=${TMP:-/tmp}/webformtmp$0
 inpt=$TMPR.inp
 
 # save STDIN (POST input) in decoded form:
@@ -38,3 +38,7 @@ tr '+;&' '
 postvar(){
 :
 }
+
+echo Content-type:text/plain
+echo
+cat $inpt
