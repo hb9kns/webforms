@@ -23,7 +23,7 @@ inpt=$TMPR.inp
 # save STDIN (POST input) in decoded form:
 # first translate '+' into SPC and ';&' (separators) into new lines
 # (note: after the last "'" there is a SPC!)
-# then permitted escaped characters
+# then permitted escaped characters (restricted for security reasons)
 tr '+;&' ' 
 ' | sed -e "s/%C2%B0/deg/g;
  s/%C3%A4/ae/g;s/%C3%B6/oe/g;s/%C3%BC/ue/g;
@@ -34,11 +34,17 @@ tr '+;&' '
  s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;
  s/%26/%/g" >$inpt
 
-# function for getting values from POST string
-postvar(){
-:
+# function for getting values from input string
+inptvar(){
+ grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//'
 }
 
 echo Content-type:text/plain
+echo
+echo "db=`inptvar db`"
+echo "pg=`inptvar pg`"
+echo "in=`inptvar in`"
+echo "vw=`inptvar vw`"
+echo "f1=`inptvar f1`"
 echo
 cat $inpt
