@@ -7,7 +7,7 @@ only server-side
 
 ---
 
-## File and CGI description
+## Files
 
 ### Database structure
 
@@ -52,8 +52,9 @@ record files.)
 
 ### Configuration file
 
-Each collection of webforms is defined by a configuration file, which
-is indicated to the CGI script with a dedicated variable name.
+Each collection of webforms is defined by a configuration file,
+which is indicated to the CGI script by a GET variable and a
+hardcoded directory, or completely hardcoded for improved safety.
 This file contains the name of the base/index file on the first (nonempty
 and non-comment) line, and the names of the (one or more) page files on the
 subsequent lines. Each name may be followed (after TABs) by a name and a
@@ -67,12 +68,11 @@ description, which will be included in the rendered page headers.
 	another/relative/path/to/pageone.txt	pageone	page one description
 	/perhaps/absolute/path/to/pagetwo.txt	pagetwo	page two description
 
-### CGI interface variables
+## CGI
 
-The script is capable of rendering all necessary pages, based on various
-CGI environment variables:
+The script renders various pages, based on CGI environment variables:
 
-- `db` config file
+- `db` config file _(ignored if hardcoded)_
 - `pg` page name
 - `in` index number
 - `vw` view (display selection)
@@ -80,3 +80,17 @@ CGI environment variables:
 - `sd` sort direction
 - `fa` flag if active entry
 - `fN` field number N
+
+### view/command variable `vw`
+
+This variable value selects the view or command.
+
+- undefined or unknown command: default view rendered according to `db` and `pg` values
+- `vw=listpages` list all available pages
+- `vw=page` display page
+- `vw=listindex` list all indices
+- `vw=descindex` details of index entry
+- `vw=editindex` edit index entry
+- `vw=saveindex` save index entry
+- `vw=editentry` edit page entry/record
+- `vw=saveentry` save page entry/record
