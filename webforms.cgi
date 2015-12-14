@@ -39,6 +39,8 @@ tr '+;&' '
  s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;
  s/%26/%/g" >$inpt
 
+### now some functions!
+
 # get values from decoded input data
 inptvar(){
  grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//'
@@ -96,6 +98,42 @@ else true
 fi
 }
 
+# display header, argument = page title
+header(){
+cat <<EOH
+Content-type: text/html
+
+<html><head><title>$*</title></head>
+EOH
+cat <<EOH
+<body>
+<p>
+:: <a href="$myself?db=$db&vw=listpages">show all pages</a>
+:: <a href="$myself?db=$db&vw=listindex">show index</a>
+:: </p>
+<hr />
+EOH
+}
+
+# display footer with some additional info
+footer(){
+sleep 1 # reduce load in case of runaway issues
+cat <<EOH
+<hr />
+<p><tt>:: `date` :: db=$db :: user=$usr ::</tt></p>
+<p><small>$myself (2015 YCB)</small></p>
+</body></html>
+EOH
+}
+
+# end script with cleanup
+finish(){
+/bin/rm -f ${TMPR}*
+exit 0
+}
+
+### now the main script!
+
 # set root for configuration files / working directory
 # (this could be set to some hardcoded directory for improved security)
 wdir=${WEBFORMSDIR:-$mydir}
@@ -112,7 +150,7 @@ then fatal configuration file $cfg not readable
  exit 9
 fi
 
-# define user permission
+# establish permissions (the higher, the better)
 perm=0
 usr=${REMOTE_USER:-nobody}
 if checkline admin $usr
@@ -134,7 +172,7 @@ else
  fi # editor
 fi # admin
 
-# at least permission 1 is necessary for running script
+# at least permission 1 is necessary for running script at all
 if test $perm -lt 1
 then fatal user $usr is not allowed
  exit 9
@@ -147,7 +185,7 @@ pfile=`getlines page <$cfg | getlines $pg | { IFS="	" # TAB
  read pfile _
  echo $pfile
 } `
-# set absolute file path
+# set absolute file path for page
 # don't change anything, if it starts with '/'
 # else prepend webform root directory
 case $pfile in
@@ -161,40 +199,9 @@ pinfo=`getlines page <$cfg | getlines $pg | { IFS="	" # TAB
  echo $pinfo
 } `
 
-# header of rendered page, argument = page title
-header(){
-cat <<EOH
-Content-type: text/html
+### now the real work!
 
-<html><head><title>$*</title></head>
-EOH
-cat <<EOH
-<body>
-<p>
-:: <a href="$myself?db=$db&vw=listpages">show all pages</a>
-:: <a href="$myself?db=$db&vw=listindex">show index</a>
-:: </p>
-<hr />
-EOH
-}
-
-# display footer
-footer(){
-cat <<EOH
-<hr />
-<p><tt>:: `date` :: db=$db :: user=$usr ::</tt></p>
-<p><small>$myself (2015 YCB)</small></p>
-</body></html>
-EOH
-}
-
-# end script with cleanup
-finish(){
-/bin/rm -f ${TMPR}*
-exit 0
-}
-
-# get view/command and process/render
+# get view/command, and process info / render page
 vw=`inptvar vw`
 vw=${vw:-default}
 case $vw in
@@ -231,4 +238,5 @@ case $vw in
  ;;
 esac
 
+# cleanup and quit
 finish
