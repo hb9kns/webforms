@@ -23,12 +23,18 @@ All lines start with a flag character, which is one of the set `#+-*`
 or something else in future versions. All fields are separated by TAB
 which therefore is forbidden as content of any field.  Lines beginning
 with `#` (comments) or any unknown character are ignored.  Empty lines
-are ignored as well.
+are ignored as well. The last line starting with `*` is the table header,
+but its next field is ignored, as it always is the index number;
+any additional line starting with `*` is completely ignored.
+
+In case of record files, the first comment (without the `#` character)
+is used as a page title for rendering.
 
 #### example base/index file
 
-	# flag	index	name	given	mail
-
+	# names and email addresses
+	
+	*	index	name	given	mail
 	+	1001	Deere	John	jode@example.com
 	# Jamie is no longer active ("deleted")
 	-	1002	Crown	Jamie	jacr@example.com
@@ -37,36 +43,52 @@ are ignored as well.
 
 #### example record file
 
-	# flag	index	arrival	departure
+	# entrance and leave database
 	
-	*	1001	January 2013	present
+	*	index	arrival date	departure date
+	+	1001	January 2013	present
 	-	1002	March 1987	June 2001
-	*	1003	April 1984	present
-	*	1004	June 2014	November 2015
+	+	1003	April 1984	present
+	+	1004	June 2014	November 2015
 
-In this case, the index entry 1002 would no longer be available in the
+In this case, the index entry 1002 would no longer be present in the
 record tables, and the entry for index 1002 would not be displayed,
-when the record file is rendered. (For the time being, the flag only
-has meaning in the base/index file, but may be used in future also in
-record files.)
+when the record file is rendered. (For the time being, `+` and `-` only
+have different meaning in the base/index file, not yet in record files.)
 
 ### Configuration file
 
 Each collection of webforms is defined by a configuration file,
 which is indicated to the CGI script by a GET variable and a
 hardcoded directory, or completely hardcoded for improved safety.
-This file contains the name of the base/index file on the first (nonempty
-and non-comment) line, and the names of the (one or more) page files on the
-subsequent lines. Each name may be followed (after TABs) by a name and a
-description, which will be included in the rendered page headers.
+Its name has the suffix `.cfg` (mandatory).
+
+This file contains the name of the base/index file (indicated by
+a leading `index` field), and the names of the (one or more) page
+files (indicated by `page`). Each file name must be prepended with
+the page name, and may be followed by a description, which will be
+included in the rendered page headers. (The page name is irrelevant
+for the index file, but any must be given.)
+
+In addition, it may contain permission levels for user names (from
+the environment variable `REMOTE_USER` from the webserver), with
+the leading field names `admin/editor/visitor`. If a `visitor` line
+is present, then *only* users explicitly listed in any of the permission
+lines are allowed to access the script; otherwise, all users not listed
+as `admin` or `editor` are allowed `visitor` access (i.e, read-only
+access to all pages).
 
 #### example configuration file
 
-	# test suite
-	
-	some/relative/path/to/basefile.txt	base	basefile description
-	another/relative/path/to/pageone.txt	pageone	page one description
-	/perhaps/absolute/path/to/pagetwo.txt	pagetwo	page two description
+	# test suite configuration
+	# type	name	filename
+	index	dummy	relative/path/to/basefile.txt	basefile description
+	page	pageone another/path/to/pageone.txt	page one description
+	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
+	# type	names
+	admin	chief	johnny	sue
+	editor	pam	james
+	visitor	guest
 
 ## CGI
 
