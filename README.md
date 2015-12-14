@@ -23,7 +23,7 @@ All lines start with a flag character, which is one of the set `#+-*`
 or something else in future versions. All fields are separated by TAB
 which therefore is forbidden as content of any field.  Lines beginning
 with `#` (comments) or any unknown character are ignored.  Empty lines
-are ignored as well. The last line starting with `*` is the table header,
+are ignored as well. The first line starting with `*` is the table header,
 but its next field is ignored, as it always is the index number;
 any additional line starting with `*` is completely ignored.
 
