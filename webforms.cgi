@@ -5,8 +5,8 @@
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
 
-This is the script $0
-which must be run as a CGI script.
+This is $0
+which must be run as a CGI script, expecting input from POST or GET requests.
 
 See accompanying README file, or online repository at
     http://gitlab.com/yargo/webforms
@@ -45,9 +45,11 @@ cat $tmpf | tr '+;&' '
 
 ### now some functions!
 
-# get values from decoded input data
-inptvar(){
- grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//'
+# end script after cleanup with exit code as arg.1
+finish(){
+/bin/rm -f ${TMPR}*
+# exit code arg.1, or 0 if missing
+exit ${1:-0}
 }
 
 # report fatal failure and quit
@@ -70,7 +72,12 @@ parsed input:
 
 EOT
 cat $inpt
-exit 5
+finish 5
+}
+
+# get values from decoded input data
+inptvar(){
+ grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//'
 }
 
 # get lines beginning with a value, and remove that column
@@ -137,12 +144,6 @@ cat <<EOH
 EOH
 }
 
-# end script with cleanup
-finish(){
-/bin/rm -f ${TMPR}*
-exit 0
-}
-
 # get file name for arg.1=type, arg.2=page
 pagefile(){
 # get file name
@@ -167,17 +168,31 @@ pageinfo(){
 
 # print HTML table head for arg.1=file, arg.2=start column
 tablehead(){
- local skip
-#echo "table head file <tt>$1</tt>"
- skip=$2
+ local skip nc nd
+ skip=${2:-0}
+ sc=${sc:-1}
+ sd=${sd:-0}
+ nc=1
  echo '<table><tr>'
-# get first line beginning with '*'
- getlines '\*' <$1 | head -n 1 | sed -e 's/	/
+# get first line beginning with '*' ('[*]' for grep pattern)
+# (note TAB in sed pattern)
+ getlines '[*]' <$1 | head -n 1 | sed -e 's/	/\
 /g' | { while read field
-  do if test $skip -gt 0
-   then skip=`expr $skip - 1`
-   else echo "<th>$field</th>"
+  do
+# for column selected for sorting, invert next sort order
+   if test $nc = $sc
+   then nd=`expr 1 - $sd`
+   else nd=$sd
    fi
+# skip start columns
+   if test $skip -gt 0
+   then skip=`expr $skip - 1`
+# render column title with sort link
+   else cat <<EOH
+<th><a href="$myself?db=$db&vw=$vw&sc=$nc&sd=$nd">$field</a></th>
+EOH
+   fi
+   nc=`expr $nc + 1`
   done
  }
  echo '</tr>'
@@ -218,7 +233,7 @@ else
  if checkline editor $usr
  then perm=10
  else
-# if "visitor" entries exist, user must be listed
+# if "visitor" entries exist, user must be explicitly allowed
   if grep "^visitor" $cfg 2>&1 >/dev/null
   then
    if checkline visitor $usr
@@ -238,6 +253,20 @@ then fatal user $usr is not allowed
 fi
 
 ### now the real work!
+
+# get and normalize sort column and order
+sc=`inptvar sc | tr -c -d '0-9'`
+sc=${sc:-1}
+if test $sc -lt 1
+then sc=1
+fi
+sd=`inptvar sd | tr -c -d '0-9'`
+# define option flag for sort command
+case $sd in
+ 0) sortopt='' ;;
+ 1) sortopt='-r' ;;
+ *) sd=0 ; sortopt='' ;;
+esac
 
 # get view/command, and process info / render page
 vw=`inptvar vw`
@@ -263,13 +292,17 @@ EOH
   header "index" "List of Index Values" "This is the list of all index values defined for the current database."
 # make header for all columns of index file
   tablehead $idx 0
-  getlines '[+-]' <$idx | { IFS="	" # TAB
+# get lines with '+' or '-'
+  getlines '[+-]' <$idx | sort $sortopt -k $sc | { IFS="	" # TAB
    while read in desc
+# use index for link to edit view
    do cat <<EOH
 <tr>
 <td><a href="$myself?db=$db&in=$in&vw=editindex">$in</a></td>
-<td>$desc</td></tr>
 EOH
+# split description into table fields
+    echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
+    echo '</tr>'
    done
    }
   echo '</table>'
