@@ -85,9 +85,9 @@ getlines(){
 # check whether entry is present on some line
 checkline(){
 local entry found
-entry=$2
+entry="$2"
 found=0
-getlines $1 | { IFS="	" # TAB
+getlines "$1" | { IFS="	" # TAB
  while test "$1" != ""
  do if test "$entry" = "$1"
   then found=1
@@ -165,15 +165,14 @@ pageinfo(){
  }
 }
 
-# generate HTML table head for arg.1=type, arg.2=page and arg.3=start column
+# print HTML table head for arg.1=file, arg.2=start column
 tablehead(){
- local pf skip
- pf=`pagefile $1 $2`
-#echo "pagefile <tt>$1:$pf</tt>"
- skip=$3
+ local skip
+#echo "table head file <tt>$1</tt>"
+ skip=$2
  echo '<table><tr>'
 # get first line beginning with '*'
- getlines '*' <$pf | head -n 1 | sed -e 's/	/
+ getlines '\*' <$1 | head -n 1 | sed -e 's/	/
 /g' | { while read field
   do if test $skip -gt 0
    then skip=`expr $skip - 1`
@@ -197,10 +196,16 @@ defcfg=default
 # define config file name
 db=`inptvar db`
 cfg="$wdir/${db:-defcfg}.cfg"
-
 if test ! -r "$cfg"
-then fatal configuration file $cfg not readable
+then fatal "configuration file $cfg not readable"
 # this should never be reached, but just to be sure:
+ exit 9
+fi
+
+# define index/base file name, '.' is wildcard for index name
+idx=`pagefile base . <$cfg`
+if test ! -r "$idx"
+then fatal "index/base file $cfg not readable"
  exit 9
 fi
 
@@ -239,21 +244,36 @@ vw=`inptvar vw`
 vw=${vw:-default}
 case $vw in
  page)
- ;;
+ ;; # page.
  listpages)
-  header "available pages" "List of Available Pages" "Here is the list of all pages available for the current database."
-# generate tablehead, starting at column 2 (after index, skipping 2)
-  cat <<EOH
-  <table><tr><th>page name</th><th>page description</th></tr>
-EOH
-  getlines page $cfg | { IFS="	" # TAB
+  header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
+  echo '<table><tr><th>page name</th><th>page description</th></tr>'
+  getlines page <$cfg | { IFS="	" # TAB
    while read name file desc
-   do echo "<tr><td>$name</td><td>$desc</td></tr>"
+   do cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&pg=$name&vw=page">$name</a></td>
+<td>$desc</td></tr>
+EOH
    done
    }
-  echo '  </table>'
-  footer ;;
- listindex) ;;
+  echo '</table>'
+  footer ;; # listpages.
+ listindex) 
+  header "index" "List of Index Values" "This is the list of all index values defined for the current database."
+# make header for all columns of index file
+  tablehead $idx 0
+  getlines '[+-]' <$idx | { IFS="	" # TAB
+   while read in desc
+   do cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&in=$in&vw=editindex">$in</a></td>
+<td>$desc</td></tr>
+EOH
+   done
+   }
+  echo '</table>'
+  footer ;; # listindex.
  descindex) ;;
  editindex) ;;
  saveindex) ;;
@@ -265,8 +285,6 @@ EOH
    echo
    echo "db=`inptvar db` (cfg=$cfg)"
    echo "pg=`inptvar pg`"
-   echo pageinfo=$pinfo
-   echo pagefile=$pfile
    echo "in=`inptvar in`"
    echo "vw=`inptvar vw`"
    echo "f1=`inptvar f1`"
