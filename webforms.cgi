@@ -252,8 +252,6 @@ then fatal user $usr is not allowed
  exit 9
 fi
 
-### now the real work!
-
 # get and normalize sort column and order
 sc=`inptvar sc | tr -c -d '0-9'`
 sc=${sc:-1}
@@ -267,6 +265,11 @@ case $sd in
  1) sortopt='-r' ;;
  *) sd=0 ; sortopt='' ;;
 esac
+
+# get and normalize index value to alphanumeric and '.-'
+in=`inptvar in | tr -c -d '0-9a-zA-Z.-'`
+
+### now the real work!
 
 # get view/command, and process info / render page
 vw=`inptvar vw`
@@ -303,12 +306,44 @@ EOH
 # split description into table fields
     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
     echo '</tr>'
+    lastin=$in
    done
+# report last index outside of loop
+   echo $lastin >$tmpf
    }
-  echo '</table>'
+  newindex=`head -n 1 $tmpf`
+  lastinn=`head -n 1 $tmpf | tr -c -d '0-9'`
+  if test $newindex = $lastinn
+  then newindex=`expr $lastinn + 1`
+  else newindex=`uuidgen | tr '-' 'z'`
+  fi
+  cat <<EOH
+</table>
+<hr />
+ <p>create
+ <a href="$myself?db=$db&in=$newindex&vw=editindex">new index entry</a>
+</p>
+EOH
   footer ;; # listindex.
  descindex) ;;
- editindex) ;;
+ editindex)
+  header "edit index" "Edit index/base fields" "Please edit fields and SAVE!"
+# get selected index (but only the first one)
+  cat <<EOH
+<form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
+EOH
+  tablehead $idx 0
+  cat <<EOH
+ <tr><td><input type="checkbox" name="fa" value="checked">
+ <input type="text" name="in" value="$in" /></td>
+ <td>
+EOH
+  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:</td><td>:g'
+### here we need to possibly add empty fields!!
+  echo '</td></tr>'
+  tablefoot
+  echo '</form>'
+  footer ;; # editindex.
  saveindex) ;;
  editentry) ;;
  saveentry) ;;
