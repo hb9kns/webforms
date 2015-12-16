@@ -167,6 +167,7 @@ pageinfo(){
 }
 
 # print HTML table head for arg.1=file, arg.2=start column
+# exit code = number of rendered columns
 tablehead(){
  local skip nc nd
  skip=${2:-0}
@@ -194,8 +195,11 @@ EOH
    fi
    nc=`expr $nc + 1`
   done
+# report number of columns outside
+  expr $nc - 1 >$tmpf
  }
  echo '</tr>'
+ return `cat $tmpf`
 }
 
 tablefoot(){ echo '</table>' ; }
@@ -330,21 +334,60 @@ EOH
   header "edit index" "Edit index/base fields" "Please edit fields and SAVE!"
 # get selected index (but only the first one)
   cat <<EOH
-<form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
+ <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
   tablehead $idx 0
+# get number of rendered header fields
+  totalcols=$?
   cat <<EOH
- <tr><td><input type="checkbox" name="fa" value="checked">
- <input type="text" name="in" value="$in" /></td>
- <td>
+ <tr>
+  <td><input type="checkbox" name="fa" value="checked">
+   <input type="text" name="in" value="$in" /></td>
 EOH
-  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:</td><td>:g'
-### here we need to possibly add empty fields!!
-  echo '</td></tr>'
+  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
+:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
+   while read field
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value="$field"></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+   while test $fn -lt $totalcols
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value=""></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+  }
+  echo ' </tr>'
   tablefoot
-  echo '</form>'
+  echo "<p>$totalcols columns in total</p>"
+  cat <<EOH
+ <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="vw" value="saveindex">
+ <input type="submit" name="submit" value="submit">
+ </form>
+EOH
   footer ;; # editindex.
- saveindex) ;;
+ saveindex)
+  header "saveindex" "Saving index entry" "Please wait..."
+  cat <<EOH
+<pre>
+    db=`inptvar db`
+    pg=`inptvar pg`
+    in=`inptvar in`
+    vw=`inptvar vw`
+    fa=`inptvar fa`
+    f1=`inptvar f1`
+    f2=`inptvar f2`
+    f3=`inptvar f3`
+    f4=`inptvar f4`
+    f5=`inptvar f5`
+</pre>
+<hr />
+<a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
+EOH
+  footer ;; # saveindex.
  editentry) ;;
  saveentry) ;;
  test) header test Test TEST ; footer ;;
