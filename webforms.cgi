@@ -150,6 +150,8 @@ pagefile(){
 # get file name
  getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
   read pfile _
+# generate probably nonexistent file name, if empty (to later raise errors)
+  pfile=${pfile:-`uuidgen`}
 # don't change, if it starts with '/'
 # else prepend webform root directory
   case $pfile in
@@ -294,9 +296,11 @@ in=`inptvar in | tr -c -d '0-9a-zA-Z.-'`
 vw=`inptvar vw`
 vw=${vw:-default}
 case $vw in
+
  page)
-  header "$pg" "`pageinfo $pg`" "For modification, select index name."
-  pagef="`pagefile $pg`"
+  pg=`inptvar pg`
+  header "$pg" "`pageinfo page $pg`" "For modification, select index name."
+  pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
 # make header for user columns of page file
@@ -333,6 +337,7 @@ EOH
 EOH
   fi
   footer ;; # page.
+
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
   echo '<table><tr><th>page name</th><th>page description</th></tr>'
@@ -347,6 +352,7 @@ EOH
    }
   echo '</table>'
   footer ;; # listpages.
+
  listindex) 
   header "index" "List of Index Values" "This is the list of all index values defined for the current database."
 # make header for all columns of index file
@@ -381,7 +387,9 @@ EOH
 </p>
 EOH
   footer ;; # listindex.
+
  descindex) ;;
+
  editindex)
   header "edit index" "Edit index/base fields" "Please edit fields and SAVE!"
 # get selected index (but only the first one)
@@ -421,6 +429,7 @@ EOH
  </form>
 EOH
   footer ;; # editindex.
+
  saveindex)
   header "saveindex" "Saving index entry" "Please wait..."
   cat <<EOH
@@ -440,10 +449,13 @@ EOH
 <a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
 EOH
   footer ;; # saveindex.
+
  editentry)
   header 'edit entry' "Record entry" "Edit fields and SAVE!"
   footer ;; # editentry.
+
  saveentry) ;;
+
  test) header test Test TEST ; footer ;;
  *) # for debugging
    echo Content-type:text/plain
