@@ -138,12 +138,13 @@ footer(){
 sleep 1 # reduce load in case of runaway issues
 cat <<EOH
 <hr />
-<p><tt>:: `date` :: db=$db :: user=$usr ::</tt></p>
+<p><tt>:: `date` :: db=$db :: $usr/$perm ::</tt></p>
 <p><small>$myself (2015 YCB)</small></p>
 </body></html>
 EOH
 }
 
+# both following functions only process first ocurrence of page
 # get file name for arg.1=type, arg.2=page
 pagefile(){
 # get file name
@@ -231,16 +232,16 @@ fi
 # establish permissions (the higher, the better)
 perm=0
 usr=${REMOTE_USER:-nobody}
-if checkline admin $usr
+if checkline admin $usr <$cfg
 then perm=100
 else
- if checkline editor $usr
+ if checkline editor $usr <$cfg
  then perm=10
  else
 # if "visitor" entries exist, user must be explicitly allowed
   if grep "^visitor" $cfg 2>&1 >/dev/null
   then
-   if checkline visitor $usr
+   if checkline visitor $usr <$cfg
    then perm=1
    else perm=0
    fi
@@ -249,6 +250,20 @@ else
   fi # visitor
  fi # editor
 fi # admin
+
+# define link field for page view
+nopageindex=0
+# set to first record field, if nopageindex present, but ...
+if checkline nopageindex '.' <$cfg
+then nopageindex=1
+fi
+# set to index field, if nopageindex is 'no' or 'false'
+if checkline nopageindex no <$cfg
+then nopageindex=0
+fi
+if checkline nopageindex false <$cfg
+then nopageindex=0
+fi
 
 # at least permission 1 is necessary for running script at all
 if test $perm -lt 1
@@ -280,7 +295,43 @@ vw=`inptvar vw`
 vw=${vw:-default}
 case $vw in
  page)
- ;; # page.
+  header "$pg" "`pageinfo $pg`" "For modification, select index name."
+  pagef="`pagefile $pg`"
+  if -r "$pagef"
+  then
+# make header for user columns of page file
+   tablehead $pagef $nopageindex
+   getlines '[+]' <$pagef | sort $sortopt -k $sc | { IFS="	" # TAB
+    while read in f1 desc
+# create link to edit view
+    do
+    if test $nopageindex = 1
+# use first field as link text
+    then cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a></td>
+EOH
+# use index field, and also render first field
+    else cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a></td>
+<td>$f1</td>
+EOH
+    fi
+# split remaining description into table fields and render
+     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
+     echo '</tr>'
+    done
+    }
+   cat <<EOH
+</table>
+<hr />
+ <p>create <a href="$myself?db=$db&in=&vw=editentry">new entry</a> </p>
+EOH
+  else cat <<EOH
+<p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
+EOH
+  footer ;; # page.
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
   echo '<table><tr><th>page name</th><th>page description</th></tr>'
