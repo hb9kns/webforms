@@ -138,8 +138,8 @@ footer(){
 sleep 1 # reduce load in case of runaway issues
 cat <<EOH
 <hr />
-<p><tt>:: `date` :: db=$db :: $usr/$perm ::</tt></p>
-<p><small>$myself (2015 YCB)</small></p>
+<p><tt>:: `date` :: db=$db ($usr/$perm) ::</tt><br />
+<small><i>$myself (2015 YCB)</i></small></p>
 </body></html>
 EOH
 }
@@ -297,7 +297,7 @@ case $vw in
  page)
   header "$pg" "`pageinfo $pg`" "For modification, select index name."
   pagef="`pagefile $pg`"
-  if -r "$pagef"
+  if test -r "$pagef"
   then
 # make header for user columns of page file
    tablehead $pagef $nopageindex
@@ -305,19 +305,19 @@ case $vw in
     while read in f1 desc
 # create link to edit view
     do
-    if test $nopageindex = 1
+     if test $nopageindex = 1
 # use first field as link text
-    then cat <<EOH
+     then cat <<EOH
 <tr>
 <td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a></td>
 EOH
 # use index field, and also render first field
-    else cat <<EOH
+     else cat <<EOH
 <tr>
 <td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a></td>
 <td>$f1</td>
 EOH
-    fi
+     fi
 # split remaining description into table fields and render
      echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
      echo '</tr>'
@@ -331,6 +331,7 @@ EOH
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
+  fi
   footer ;; # page.
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
@@ -439,7 +440,9 @@ EOH
 <a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
 EOH
   footer ;; # saveindex.
- editentry) ;;
+ editentry)
+  header 'edit entry' "Record entry" "Edit fields and SAVE!"
+  footer ;; # editentry.
  saveentry) ;;
  test) header test Test TEST ; footer ;;
  *) # for debugging
