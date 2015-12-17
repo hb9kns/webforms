@@ -401,7 +401,7 @@ EOH
   totalcols=$?
   cat <<EOH
  <tr>
-  <td><input type="checkbox" name="fa" value="checked">
+  <td><input type="checkbox" name="fa" value="1">
    <input type="text" name="in" value="$in" /></td>
 EOH
   getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
@@ -451,10 +451,46 @@ EOH
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Record entry" "Edit fields and SAVE!"
+  header 'edit entry' "Edit page entry" "Edit fields and SAVE! Click on :DEL: to delete an entry."
+  cat <<EOH
+ <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
+EOH
+  tablehead $pg 0
+# get number of rendered header fields
+  totalcols=$?
+  cat <<EOH
+ <tr>
+   <td><a href="$myself?db=$db&vw=saveentry&in=$in&fa=delete">:DEL:</a><input type="text" name="in" value="$in" /></td>
+EOH
+  getlines '[+-]' <$pg | getlines $in | head -n 1 | sed -e 's:	:\
+:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
+   while read field
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value="$field"></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+   while test $fn -lt $totalcols
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value=""></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+  }
+  echo ' </tr>'
+  tablefoot
+  cat <<EOH
+ <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="vw" value="saveindex">
+ <input type="hidden" name="fa" value="1">
+ <input type="submit" name="submit" value="submit">
+ </form>
+EOH
   footer ;; # editentry.
 
- saveentry) ;;
+ saveentry)
+  header 'save entry' "Save entry" "Please wait ..."
+  footer ;; # saveentry.
 
  test) header test Test TEST ; footer ;;
  *) # for debugging
