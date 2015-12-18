@@ -312,15 +312,17 @@ case $vw in
 # create link to edit view
     do
      if test $nopageindex = 1
-# use first field as link text
+# use first field as link text, and for description of index/base
      then cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a></td>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a>
+    <a href="$myself?db=$db&in=$in&vw=descindex">?</a></td>
 EOH
 # use index field, and also render first field
      else cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a></td>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a>
+    <a href="$myself?db=$db&in=$in&vw=descindex">?</a></td>
 <td>$f1</td>
 EOH
      fi
@@ -356,7 +358,7 @@ EOH
   footer ;; # listpages.
 
  listindex) 
-  header "index" "List of Index Values" "This is the list of all index values defined for the current database."
+  header "index" "List of Index Values" "This is the list of all index values defined for the current database.  Click links in first column to edit."
 # make header for all columns of index file
   tablehead $idx 0
 # get lines with '+' or '-'
@@ -395,7 +397,15 @@ EOH
 EOH
   footer ;; # listindex.
 
- descindex) ;;
+ descindex)
+  header "index/base $in" 'Index/base description' "Values associated with index <tt>$in</tt>"
+  echo '<pre>'
+  getlines '[+-]' <$idx | getlines $in
+  echo '</pre>'
+  cat <<EOH
+<p><a href="$myself?db=$db&in=$in&vw=editindex">EDIT</a></p>
+EOH
+  footer ;; # descindex.
 
  editindex)
   header "edit index" "Edit index/base fields" "Please edit fields and SAVE.<br />Note: first field (index) must be unique, will overwrite old entry if already present!"
@@ -408,7 +418,7 @@ EOH
   totalcols=$?
   cat <<EOH
  <tr>
-  <td><input type="checkbox" name="fa" value="1">
+  <td>(<input type="checkbox" name="fa" value="show" checked>show)
    <input type="text" name="in" value="$in" /></td>
 EOH
   getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
