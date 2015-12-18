@@ -306,7 +306,6 @@ case $vw in
   if test -r "$pagef"
   then
 # make header for user columns of page file
-echo "<p><tt>nopageindex=$nopageindex</tt></p>"
    tablehead $pagef $nopageindex
    getlines '[+]' <$pagef | sort $sortopt -k $sc | { IFS="	" # TAB
     while read in f1 desc
@@ -459,45 +458,97 @@ EOH
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Edit page entry" "Edit fields and SAVE! Click on :DEL: to delete an entry."
-  cat <<EOH
+  header 'edit entry' "Edit page entry" "Edit fields and SAVE! (HIDE to delete an entry without saving)"
+  maxflength=`getlines maxlength <$cfg | head -n 1`
+  maxflength=${maxflength:-199}
+  pg=`inptvar pg '0-9A-Za-z'`
+  pagef="`pagefile page $pg`"
+  if test -r "$pagef"
+  then
+   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
-  tablehead $pg 0
+# make header for user columns of page file, with all columns
+   tablehead $pagef 0
 # get number of rendered header fields
-  totalcols=$?
-  cat <<EOH
- <tr>
-   <td><a href="$myself?db=$db&vw=saveentry&in=$in&fa=delete">:DEL:</a><input type="text" name="in" value="$in" /></td>
+   totalcols=$?
+# delete link
+   cat <<EOH
+ <tr><td><select name="id">
 EOH
-  getlines '[+-]' <$pg | getlines $in | head -n 1 | sed -e 's:	:\
-:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
-   while read field
-   do cat <<EOH
-  <td><input type="text" name="f$fn" value="$field"></td>
+# get all possible index names, only uniques
+  getlines '[+]' <$idx | sed -e 's/	.*//' | sort -u | { local nin
+   while read nin
+   do if test "$nin" = "$in"
+    then cat <<EOH
+  <option value="$nin" selected>$nin #</option>
 EOH
-    fn=`expr $fn + 1`
-   done
-   while test $fn -lt $totalcols
-   do cat <<EOH
-  <td><input type="text" name="f$fn" value=""></td>
+    else cat <<EOH
+  <option value="$nin">$nin</option>
 EOH
-    fn=`expr $fn + 1`
+    fi
    done
   }
-  echo ' </tr>'
-  tablefoot
   cat <<EOH
+ </select></td>
+EOH
+# read record fields of current index, split onto separate lines
+   getlines '[+-]' <$pagef | getlines $in | head -n 1 | sed -e 's:	:\
+:g;s/"/\\"/g' | { local fn field af
+    fn=1
+    af=autofocus # for first field
+    while read field
+# populate fields with current values
+    do cat <<EOH
+  <td>
+   <input type="text" name="f$fn" value="$field" maxlength="$maxflength" $af>
+  </td>
+EOH
+     fn=`expr $fn + 1`
+     af=''
+    done
+# add empty fields, if less present than in header line
+    while test $fn -lt $totalcols
+    do cat <<EOH
+  <td><input type="text" name="f$fn" value=""></td>
+EOH
+     fn=`expr $fn + 1`
+    done
+   }
+   echo ' </tr>'
+   tablefoot
+   cat <<EOH
  <input type="hidden" name="db" value="$db">
- <input type="hidden" name="vw" value="saveindex">
- <input type="hidden" name="fa" value="1">
- <input type="submit" name="submit" value="submit">
+ <input type="hidden" name="vw" value="saveentry">
+ <input type="hidden" name="fa" value="save">
+ <input type="submit" name="submit" value="SAVE">
+ <a href="$myself?db=$db&in=$in&vw=saveentry&fa=hide">HIDE</a>
  </form>
 EOH
+  else cat <<EOH
+<p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
+EOH
+  fi
   footer ;; # editentry.
 
  saveentry)
   header 'save entry' "Save entry" "Please wait ..."
+  cat <<EOH
+<pre>
+    db=`inptvar db`
+    pg=`inptvar pg`
+    in=`inptvar in`
+    vw=`inptvar vw`
+    fa=`inptvar fa`
+    f1=`inptvar f1`
+    f2=`inptvar f2`
+    f3=`inptvar f3`
+    f4=`inptvar f4`
+    f5=`inptvar f5`
+</pre>
+<hr />
+<a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
+EOH
   footer ;; # saveentry.
 
  test) header test Test TEST ; footer ;;
