@@ -4,6 +4,10 @@
 
 GITHOME=http://gitlab.com/yargo/webforms
 
+# default permitted characters in record fields: SPC and printable ASCII
+# as 'tr' pattern
+defaultfieldchars=' -~'
+
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
@@ -37,14 +41,12 @@ echo "$QUERY_STRING" >>$tmpf
 # (note: after the last "'" there is a SPC!)
 # then permitted escaped characters (restricted for security reasons)
 cat $tmpf | tr '+;&' ' 
-' | sed -e "s/%C2%B0/deg/g;
- s/%C3%A4/ae/g;s/%C3%B6/oe/g;s/%C3%BC/ue/g;
- s/%C3%84/Ae/g;s/%C3%96/Oe/g;s/%C3%9C/Ue/g;
- s/%2B/+/g;s/%22/'/g;s/%25/&/g;s/%2F/\//g;s/%28/(/g;s/%29/)/g;s/%3D/=/g;
+' | sed -e "s/%C2%B0/deg/g;s/%B0/deg/g;
+ s/%2B/+/g;s/%22/\"/g;s/%26/&/g;s/%2F/\//g;s/%28/(/g;s/%29/)/g;s/%3D/=/g;
  s/%3F/?/g;s/%27/'/g;s/%5E/^/g;s/%7E/~/g;s/%3C/</g;s/%3E/>/g;
- s/%7B/{/g;s/%7D/}/g;s/%5B/[/g;s/%5D/]/g;s/%21/!/g;s/%24/\$/g;
- s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;
- s/%26/%/g" >$inpt
+ s/%7B/{/g;s/%7D/}/g;s/%5B/[/g;s/%5C/\//g;s/%5D/]/g;s/%21/!/g;s/%24/\$/g;
+ s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;s/%40/@/g;
+ s/%25/%/g" >$inpt
 
 ### now some functions!
 
@@ -83,7 +85,7 @@ finish 5
 inptvar(){
  local permchar
 # default safe characters
- permchar=${2:-'0-9.A-Za-z_-'}
+ permchar="${2:-0-9.A-Za-z_-}"
  grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//' | tr -c -d "$permchar"
 }
 
@@ -137,6 +139,11 @@ footer(){
 cat <<EOH
 <hr />
 <p><small><i>processed by <a href="$GITHOME">$myself</a></i></small></p>
+<pre>
+EOH
+# cat $inpt # for debugging
+cat <<EOH
+</pre>
 </body>
 <head>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
@@ -296,6 +303,10 @@ fi
 if checkline nopageindex 0 <$cfg
 then nopageindex=0
 fi
+
+# define permitted characters for record fields
+fieldchars=`getlines fieldchars <$cfg`
+fieldchars=${fieldchars:-$defaultfieldchars}
 
 # at least permission 1 is necessary for running script at all
 if test $perm -lt 1
@@ -490,24 +501,27 @@ EOH
    then
 # .. add new/modified fields to initial flag and index name
     i=1 ; newline="+	$in"
-    nf="`inptvar f$i`
+    nf="`grep ^f$i= $inpt | sed -e s/f$i=//`"
+    nf="`inptvar f$i \"$fieldchars\"`"
     while test "$nf" != ""
     do
 # separate fields by TAB
      newline="$newline	$nf"
-     nf="`inptvar f$i`
      i=`expr $i + 1`
+     nf="`inptvar f$i \"$fieldchars\"`"
     done
     echo "$newline" >>$tmpf
+    echo '<p>as available entry</p><p><pre>'
 # .. else add present data as hidden entry
-   else grep "^[+-][ 	][ 	]*$in" <$idx | head -n 1 | sed -e 's/^+/-/ >>$tmpf
+   else grep "^[+-][ 	][ 	]*$in" <$idx | head -n 1 | sed -e 's/^+/-/' >>$tmpf
+    echo '<p>as hidden entry</p><p><pre>'
    fi
+   tail -n 1 $tmpf
+   echo '</pre></p>'
 # save updated index file
    cat $tmpf > $idx
    cat <<EOH
-<p><em>DONE!</em></p>
-<hr />
-<a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
+<p><a href="$myself?db=$db&vw=listindex&sc=1&sd=1">DONE!</a></p>
 EOH
    releasefile "$inlock"
   fi
