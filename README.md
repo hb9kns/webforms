@@ -23,12 +23,11 @@ All lines start with a flag character, which is one of the set `#+-*`
 or something else in future versions. All fields are separated by TAB
 which therefore is forbidden as content of any field.  Lines beginning
 with `#` (comments) or any unknown character are ignored.  Empty lines
-are ignored as well. The first line starting with `*` is the table header,
-but its next field is ignored, as it always is the index number;
+are ignored as well. The first line starting with `*` is the table header;
 any additional line starting with `*` is completely ignored.
 
-In case of record files, the first comment (without the `#` character)
-is used as a page title for rendering.
+Index fields must be unique, and this is enforced by the script:
+any duplicate entry may be deleted and only one retained.
 
 #### example base/index file
 
@@ -70,13 +69,17 @@ the page name, and may be followed by a description, which will be
 included in the rendered page headers. (The page name is irrelevant
 for the index file, but any must be given.)
 
-In addition, it may contain permission levels for user names (from
-the environment variable `REMOTE_USER` from the webserver), with
-the leading field names `admin/editor/visitor`. If a `visitor` line
-is present, then *only* users explicitly listed in any of the permission
-lines are allowed to access the script; otherwise, all users not listed
-as `admin` or `editor` are allowed `visitor` access (i.e, read-only
-access to all pages).
+By setting the field `nopageindex` to something else than `false` or `0` ,
+displaying of the column for the index/base string can be suppressed.
+This column normally is shown as the first one in page views,
+but it may be of little use in case of numeric or random-like values.
+
+Permission levels for user names (passed via `REMOTE_USER` from the webserver)
+can be set with field names `admin/editor/visitor`.
+If a `visitor` line is present, then *only users explicitly listed*
+on any of the permission lines are allowed to access the script.
+Otherwise, all users not listed as `admin` or `editor` are allowed
+only `visitor` access (i.e, read-only access to all pages).
 
 #### example configuration file
 
@@ -85,6 +88,8 @@ access to all pages).
 	index	dummy	relative/path/to/basefile.txt	basefile description
 	page	pageone another/path/to/pageone.txt	page one description
 	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
+	# suppress displaying index/base field in page view
+	nopageindex	true
 	# type	names
 	admin	chief	johnny	sue
 	editor	pam	james
