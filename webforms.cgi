@@ -76,9 +76,12 @@ cat $inpt
 finish 5
 }
 
-# get values from decoded input data
+# get values from decoded input data; optional arg.2 = permitted characters
 inptvar(){
- grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//'
+ local permchar
+# default safe characters
+ permchar=${2:-'0-9.A-Za-z_-'}
+ grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//' | tr -c -d "$permchar"
 }
 
 # get lines beginning with a value, and remove that column
@@ -147,6 +150,8 @@ pagefile(){
 # get file name
  getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
   read pfile _
+# sanitize
+  pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_-'`
 # generate probably nonexistent file name, if empty (to later raise errors)
   pfile=${pfile:-`uuidgen`}
 # don't change, if it starts with '/'
@@ -271,12 +276,12 @@ then fatal user $usr is not allowed
 fi
 
 # get and normalize sort column and order
-sc=`inptvar sc | tr -c -d '0-9'`
+sc=`inptvar sc '0-9'`
 sc=${sc:-1}
 if test $sc -lt 1
 then sc=1
 fi
-sd=`inptvar sd | tr -c -d '0-9'`
+sd=`inptvar sd '0-9'`
 # define option flag for sort command
 case $sd in
  0) sortopt='' ;;
@@ -284,18 +289,18 @@ case $sd in
  *) sd=0 ; sortopt='' ;;
 esac
 
-# get and normalize index value to alphanumeric and '.-'
-in=`inptvar in | tr -c -d '0-9a-zA-Z.-'`
+# get and sanitize index value
+in=`inptvar in '0-9a-zA-Z.-'`
 
 ### now the real work!
 
 # get view/command, and process info / render page
-vw=`inptvar vw`
+vw=`inptvar vw '0-9A-Za-z'`
 vw=${vw:-default}
 case $vw in
 
  page)
-  pg=`inptvar pg`
+  pg=`inptvar pg '0-9A-Za-z'`
   header "$pg" "`pageinfo page $pg`" "For modification, select index name."
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
