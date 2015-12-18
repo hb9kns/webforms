@@ -1,8 +1,10 @@
 #!/bin/sh
 # webforms.cgi (2015 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
+
 GITHOME=http://gitlab.com/yargo/webforms
 
+REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
 
@@ -208,6 +210,32 @@ EOH
 }
 
 tablefoot(){ echo '</table>' ; }
+
+# attempt to get a lockfile (arg.1)
+lockfile(){
+ local lf lc
+ lc=9 # timeout counter
+ lf="$1.lock"
+# while file already present, and not yet timeout
+ while test -f "$lf" -a $lc -gt 0
+ do lc=`expr $lc - 1`
+  sleep 2
+ done
+ if test -f "$lf"
+# if file still exists, fail with empty reply
+ then echo
+ else
+# save some debugging stuff
+  echo lockfile from $myself > "$lf"
+  date -u '+%Y-%m-%d,%H:%M:%S' >> "$lf"
+  printenv | sort >> "$lf"
+# reply with file name
+  echo "$lf"
+ fi
+}
+
+# release locked file by deleting lockfile
+releasefile(){ /bin/rm -f $1 ; }
 
 ### now preparations for the main script!
 
@@ -445,23 +473,44 @@ EOH
   footer ;; # editindex.
 
  saveindex)
-  header "saveindex" "Saving index entry" "Please wait..."
-  cat <<EOH
-<pre>
-    db=`inptvar db`
-    pg=`inptvar pg`
-    in=`inptvar in`
-    vw=`inptvar vw`
-    fa=`inptvar fa`
-    f1=`inptvar f1`
-    f2=`inptvar f2`
-    f3=`inptvar f3`
-    f4=`inptvar f4`
-    f5=`inptvar f5`
-</pre>
+  header "saveindex" "Saving index entry" "Attempting to save index $in ..."
+  inlock="`lockfile $idx`"
+  if test "$inlock" = ""
+  then cat <<EOH
+<p><em>FAILED</em> due to locked file <tt>$idx</tt>!
+<br />Please wait some time, and try again, or ask a wizard!
+<br />Depending on your browser, it may be possible to recover your entries by clicking "Back".
+</p>
+EOH
+  else
+# copy everything not containing selected index (SPC&TAB in patterns)
+   grep -v "^[+-][ 	][ 	]*$in" <$idx >$tmpf
+# show new/modified entry?
+   if test "`inptvar fa`" = "show"
+   then
+# .. add new/modified fields to initial flag and index name
+    i=1 ; newline="+	$in"
+    nf="`inptvar f$i`
+    while test "$nf" != ""
+    do
+# separate fields by TAB
+     newline="$newline	$nf"
+     nf="`inptvar f$i`
+     i=`expr $i + 1`
+    done
+    echo "$newline" >>$tmpf
+# .. else add present data as hidden entry
+   else grep "^[+-][ 	][ 	]*$in" <$idx | head -n 1 | sed -e 's/^+/-/ >>$tmpf
+   fi
+# save updated index file
+   cat $tmpf > $idx
+   cat <<EOH
+<p><em>DONE!</em></p>
 <hr />
 <a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
 EOH
+   releasefile "$inlock"
+  fi
   footer ;; # saveindex.
 
  editentry)
