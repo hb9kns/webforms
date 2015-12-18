@@ -1,6 +1,7 @@
 #!/bin/sh
-# webforms.cgi (2015 Y.Bonetti)
+# webforms.cgi (2015 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
+GITHOME=http://gitlab.com/yargo/webforms
 
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
@@ -9,7 +10,7 @@ This is $0
 which must be run as a CGI script, expecting input from POST or GET requests.
 
 See accompanying README file, or online repository at
-    http://gitlab.com/yargo/webforms
+	$GITHOME
 for further information.
 
 EOT
@@ -112,11 +113,12 @@ Content-type: text/html
 <META HTTP-EQUIV="Expires" CONTENT="-1">
 </head>
 <body>
+<p align="right">
+<tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perm)</tt>
+</p>
 <p>
-:: <a href="$myself?db=$db&vw=listpages">show all pages</a>
-:: <a href="$myself?db=$db&vw=listindex">show index</a>
-:: <a href="$myself?db=$db&vw=none">none</a>
-:: <a href="test.html">form</a>
+:: <a href="$myself?db=$db&vw=listpages">page list</a>
+:: <a href="$myself?db=$db&vw=listindex">index list</a>
 :: </p>
 <hr />
 <h1>$2</h1>
@@ -125,7 +127,6 @@ shift
 shift
 cat <<EOH
 <p>$*</p>
-<hr />
 EOH
 }
 
@@ -133,8 +134,7 @@ EOH
 footer(){
 cat <<EOH
 <hr />
-<p><tt>:: `date` :: db=$db ($usr/$perm) ::</tt><br />
-<small><i>$myself (2015 YCB)</i></small></p>
+<p><small><i>processed by <a href="$GITHOME">$myself</a></i></small></p>
 </body>
 <head>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
@@ -301,7 +301,8 @@ case $vw in
 
  page)
   pg=`inptvar pg '0-9A-Za-z'`
-  header "$pg" "`pageinfo page $pg`" "For modification, select index name."
+  header "$pg" "`pageinfo page $pg`" "For modification, select index name, or
+<a href=\"$myself?db=$db&in=&vw=editentry\">create new entry.</a>"
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
@@ -333,8 +334,6 @@ EOH
     }
    cat <<EOH
 </table>
-<hr />
- <p>create <a href="$myself?db=$db&in=&vw=editentry">new entry</a> </p>
 EOH
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
@@ -343,7 +342,7 @@ EOH
   footer ;; # page.
 
  listpages)
-  header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
+  header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>page name</th><th>page description</th></tr>'
   getlines page <$cfg | { IFS="	" # TAB
    while read name file desc
@@ -358,7 +357,7 @@ EOH
   footer ;; # listpages.
 
  listindex) 
-  header "index" "List of Index Values" "This is the list of all index values defined for the current database.  Click links in first column to edit."
+  header "index" "List of Index Values" "This is the list of all index values available for database <tt>$db</tt>.<br />Click links in first column to edit."
 # make header for all columns of index file
   tablehead $idx 0
 # get lines with '+' or '-'
@@ -390,7 +389,6 @@ EOH
   newindex=`head -n 1 $tmpf`
   cat <<EOH
 </table>
-<hr />
  <p>create
  <a href="$myself?db=$db&in=$newindex&vw=editindex">new index entry</a>
 </p>
@@ -408,7 +406,7 @@ EOH
   footer ;; # descindex.
 
  editindex)
-  header "edit index" "Edit index/base fields" "Please edit fields and SAVE.<br />Note: first field (index) must be unique, will overwrite old entry if already present!"
+  header "edit index" "Edit index/base fields" "Edit fields and SAVE.<br />Notes: first field (index) must be unique, will overwrite old entry if already present! To suppress listing of this index on record page, deselect SHOW!"
 # get selected index (but only the first one)
   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
@@ -418,7 +416,7 @@ EOH
   totalcols=$?
   cat <<EOH
  <tr>
-  <td>(<input type="checkbox" name="fa" value="show" checked>show)
+  <td>SHOW<input type="checkbox" name="fa" value="show" checked>
    <input type="text" name="in" value="$in" /></td>
 EOH
   getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
@@ -438,11 +436,10 @@ EOH
   }
   echo ' </tr>'
   tablefoot
-  echo "<p>$totalcols columns in total</p>"
   cat <<EOH
  <input type="hidden" name="db" value="$db">
  <input type="hidden" name="vw" value="saveindex">
- <input type="submit" name="submit" value="submit">
+ <input type="submit" name="submit" value="SAVE">
  </form>
 EOH
   footer ;; # editindex.
@@ -468,7 +465,7 @@ EOH
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Edit page entry" "Edit fields and SAVE! (HIDE to delete an entry without saving)"
+  header 'edit entry' "Edit page entry" "Edit fields and SAVE (HIDE to delete an entry without saving)"
   maxflength=`getlines maxlength <$cfg | head -n 1`
   maxflength=${maxflength:-199}
   pg=`inptvar pg '0-9A-Za-z'`
