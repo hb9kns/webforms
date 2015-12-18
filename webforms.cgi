@@ -48,6 +48,7 @@ cat $tmpf | tr '+;&' '
 # end script after cleanup with exit code as arg.1
 finish(){
 /bin/rm -f ${TMPR}*
+sleep 1 # to reduce possible load
 # exit code arg.1, or 0 if missing
 exit ${1:-0}
 }
@@ -94,19 +95,8 @@ checkline(){
 local entry found
 entry="$2"
 found=0
-getlines "$1" | { IFS="	" # TAB
- while test "$1" != ""
- do if test "$entry" = "$1"
-  then found=1
-   break
-  else shift
-  fi
- done
- }
-if test $found = 0
-then false
-else true
-fi
+# read lines, surround with TAB (in sed pattern), and check if somewhere
+getlines "$1" | sed -e 's/^/	/;s/$/	/' | grep "$entry" 2>&1 >/dev/null
 }
 
 # display header, arg.1 = page title, arg.2 = main title, arg.3 = description
@@ -114,7 +104,10 @@ header(){
 cat <<EOH
 Content-type: text/html
 
-<html><head><title>$1</title></head>
+<html><head><title>$1</title>
+<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+<META HTTP-EQUIV="Expires" CONTENT="-1">
+</head>
 <body>
 <p>
 :: <a href="$myself?db=$db&vw=listpages">show all pages</a>
@@ -135,12 +128,16 @@ EOH
 
 # display footer with some additional info
 footer(){
-sleep 1 # reduce load in case of runaway issues
 cat <<EOH
 <hr />
 <p><tt>:: `date` :: db=$db ($usr/$perm) ::</tt><br />
 <small><i>$myself (2015 YCB)</i></small></p>
-</body></html>
+</body>
+<head>
+<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+<META HTTP-EQUIV="Expires" CONTENT="-1">
+</head>
+</html>
 EOH
 }
 
@@ -255,15 +252,15 @@ fi # admin
 
 # define link field for page view
 nopageindex=0
-# set to first record field, if nopageindex present, but ...
-if checkline nopageindex '.' <$cfg
+# set to first record field, if nopageindex present with any value
+if checkline nopageindex '.*' <$cfg
 then nopageindex=1
 fi
-# set to index field, if nopageindex is 'no' or 'false'
-if checkline nopageindex no <$cfg
+# reset to index field, if false or 0
+if checkline nopageindex false <$cfg
 then nopageindex=0
 fi
-if checkline nopageindex false <$cfg
+if checkline nopageindex 0 <$cfg
 then nopageindex=0
 fi
 
@@ -304,6 +301,7 @@ case $vw in
   if test -r "$pagef"
   then
 # make header for user columns of page file
+echo "<p><tt>nopageindex=$nopageindex</tt></p>"
    tablehead $pagef $nopageindex
    getlines '[+]' <$pagef | sort $sortopt -k $sc | { IFS="	" # TAB
     while read in f1 desc
@@ -359,6 +357,10 @@ EOH
   tablehead $idx 0
 # get lines with '+' or '-'
   getlines '[+-]' <$idx | sort $sortopt -k $sc | { IFS="	" # TAB
+# some local variables for new index values
+   local maxind pastind i
+   maxind=0
+   i=1
    while read in desc
 # use index for link to edit view
    do cat <<EOH
@@ -368,17 +370,18 @@ EOH
 # split description into table fields
     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
     echo '</tr>'
-    lastin=$in
+# convert last index to numeric value and increment,
+# or set to counter value, if non-numeric
+    pastind=`expr $in + 1` ; pastind=${pastind:-$i}
+    if test $maxind -lt $pastind
+    then maxind=$pastind
+    fi
+    i=`expr $i + 1`
    done
-# report last index outside of loop
-   echo $lastin >$tmpf
+# report next index outside of loop
+   echo $maxind >$tmpf
    }
   newindex=`head -n 1 $tmpf`
-  lastinn=`head -n 1 $tmpf | tr -c -d '0-9'`
-  if test $newindex = $lastinn
-  then newindex=`expr $lastinn + 1`
-  else newindex=`uuidgen | tr '-' 'z'`
-  fi
   cat <<EOH
 </table>
 <hr />
@@ -391,7 +394,7 @@ EOH
  descindex) ;;
 
  editindex)
-  header "edit index" "Edit index/base fields" "Please edit fields and SAVE!"
+  header "edit index" "Edit index/base fields" "Please edit fields and SAVE.<br />Note: first field (index) must be unique, will overwrite old entry if already present!"
 # get selected index (but only the first one)
   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
