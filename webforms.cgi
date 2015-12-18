@@ -138,17 +138,20 @@ footer(){
 sleep 1 # reduce load in case of runaway issues
 cat <<EOH
 <hr />
-<p><tt>:: `date` :: db=$db :: user=$usr ::</tt></p>
-<p><small>$myself (2015 YCB)</small></p>
+<p><tt>:: `date` :: db=$db ($usr/$perm) ::</tt><br />
+<small><i>$myself (2015 YCB)</i></small></p>
 </body></html>
 EOH
 }
 
+# both following functions only process first ocurrence of page
 # get file name for arg.1=type, arg.2=page
 pagefile(){
 # get file name
  getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
   read pfile _
+# generate probably nonexistent file name, if empty (to later raise errors)
+  pfile=${pfile:-`uuidgen`}
 # don't change, if it starts with '/'
 # else prepend webform root directory
   case $pfile in
@@ -167,6 +170,7 @@ pageinfo(){
 }
 
 # print HTML table head for arg.1=file, arg.2=start column
+# exit code = number of rendered columns
 tablehead(){
  local skip nc nd
  skip=${2:-0}
@@ -194,8 +198,11 @@ EOH
    fi
    nc=`expr $nc + 1`
   done
+# report number of columns outside
+  expr $nc - 1 >$tmpf
  }
  echo '</tr>'
+ return `cat $tmpf`
 }
 
 tablefoot(){ echo '</table>' ; }
@@ -227,16 +234,16 @@ fi
 # establish permissions (the higher, the better)
 perm=0
 usr=${REMOTE_USER:-nobody}
-if checkline admin $usr
+if checkline admin $usr <$cfg
 then perm=100
 else
- if checkline editor $usr
+ if checkline editor $usr <$cfg
  then perm=10
  else
 # if "visitor" entries exist, user must be explicitly allowed
   if grep "^visitor" $cfg 2>&1 >/dev/null
   then
-   if checkline visitor $usr
+   if checkline visitor $usr <$cfg
    then perm=1
    else perm=0
    fi
@@ -245,6 +252,20 @@ else
   fi # visitor
  fi # editor
 fi # admin
+
+# define link field for page view
+nopageindex=0
+# set to first record field, if nopageindex present, but ...
+if checkline nopageindex '.' <$cfg
+then nopageindex=1
+fi
+# set to index field, if nopageindex is 'no' or 'false'
+if checkline nopageindex no <$cfg
+then nopageindex=0
+fi
+if checkline nopageindex false <$cfg
+then nopageindex=0
+fi
 
 # at least permission 1 is necessary for running script at all
 if test $perm -lt 1
@@ -275,8 +296,48 @@ in=`inptvar in | tr -c -d '0-9a-zA-Z.-'`
 vw=`inptvar vw`
 vw=${vw:-default}
 case $vw in
+
  page)
- ;; # page.
+  pg=`inptvar pg`
+  header "$pg" "`pageinfo page $pg`" "For modification, select index name."
+  pagef="`pagefile page $pg`"
+  if test -r "$pagef"
+  then
+# make header for user columns of page file
+   tablehead $pagef $nopageindex
+   getlines '[+]' <$pagef | sort $sortopt -k $sc | { IFS="	" # TAB
+    while read in f1 desc
+# create link to edit view
+    do
+     if test $nopageindex = 1
+# use first field as link text
+     then cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a></td>
+EOH
+# use index field, and also render first field
+     else cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a></td>
+<td>$f1</td>
+EOH
+     fi
+# split remaining description into table fields and render
+     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
+     echo '</tr>'
+    done
+    }
+   cat <<EOH
+</table>
+<hr />
+ <p>create <a href="$myself?db=$db&in=&vw=editentry">new entry</a> </p>
+EOH
+  else cat <<EOH
+<p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
+EOH
+  fi
+  footer ;; # page.
+
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for the current database."
   echo '<table><tr><th>page name</th><th>page description</th></tr>'
@@ -291,6 +352,7 @@ EOH
    }
   echo '</table>'
   footer ;; # listpages.
+
  listindex) 
   header "index" "List of Index Values" "This is the list of all index values defined for the current database."
 # make header for all columns of index file
@@ -325,28 +387,111 @@ EOH
 </p>
 EOH
   footer ;; # listindex.
+
  descindex) ;;
+
  editindex)
   header "edit index" "Edit index/base fields" "Please edit fields and SAVE!"
 # get selected index (but only the first one)
   cat <<EOH
-<form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
+ <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
   tablehead $idx 0
+# get number of rendered header fields
+  totalcols=$?
   cat <<EOH
- <tr><td><input type="checkbox" name="fa" value="checked">
- <input type="text" name="in" value="$in" /></td>
- <td>
+ <tr>
+  <td><input type="checkbox" name="fa" value="1">
+   <input type="text" name="in" value="$in" /></td>
 EOH
-  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:</td><td>:g'
-### here we need to possibly add empty fields!!
-  echo '</td></tr>'
+  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
+:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
+   while read field
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value="$field"></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+   while test $fn -lt $totalcols
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value=""></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+  }
+  echo ' </tr>'
   tablefoot
-  echo '</form>'
+  echo "<p>$totalcols columns in total</p>"
+  cat <<EOH
+ <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="vw" value="saveindex">
+ <input type="submit" name="submit" value="submit">
+ </form>
+EOH
   footer ;; # editindex.
- saveindex) ;;
- editentry) ;;
- saveentry) ;;
+
+ saveindex)
+  header "saveindex" "Saving index entry" "Please wait..."
+  cat <<EOH
+<pre>
+    db=`inptvar db`
+    pg=`inptvar pg`
+    in=`inptvar in`
+    vw=`inptvar vw`
+    fa=`inptvar fa`
+    f1=`inptvar f1`
+    f2=`inptvar f2`
+    f3=`inptvar f3`
+    f4=`inptvar f4`
+    f5=`inptvar f5`
+</pre>
+<hr />
+<a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
+EOH
+  footer ;; # saveindex.
+
+ editentry)
+  header 'edit entry' "Edit page entry" "Edit fields and SAVE! Click on :DEL: to delete an entry."
+  cat <<EOH
+ <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
+EOH
+  tablehead $pg 0
+# get number of rendered header fields
+  totalcols=$?
+  cat <<EOH
+ <tr>
+   <td><a href="$myself?db=$db&vw=saveentry&in=$in&fa=delete">:DEL:</a><input type="text" name="in" value="$in" /></td>
+EOH
+  getlines '[+-]' <$pg | getlines $in | head -n 1 | sed -e 's:	:\
+:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
+   while read field
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value="$field"></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+   while test $fn -lt $totalcols
+   do cat <<EOH
+  <td><input type="text" name="f$fn" value=""></td>
+EOH
+    fn=`expr $fn + 1`
+   done
+  }
+  echo ' </tr>'
+  tablefoot
+  cat <<EOH
+ <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="vw" value="saveindex">
+ <input type="hidden" name="fa" value="1">
+ <input type="submit" name="submit" value="submit">
+ </form>
+EOH
+  footer ;; # editentry.
+
+ saveentry)
+  header 'save entry' "Save entry" "Please wait ..."
+  footer ;; # saveentry.
+
  test) header test Test TEST ; footer ;;
  *) # for debugging
    echo Content-type:text/plain
