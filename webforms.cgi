@@ -118,7 +118,7 @@ Content-type: text/html
 </head>
 <body>
 <p align="right">
-<tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perm)</tt>
+<tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perms)</tt>
 </p>
 <p>
 EOH
@@ -501,7 +501,7 @@ EOH
   tablefoot
   cat <<EOH
  <input type="hidden" name="db" value="$db">
- <input type="hidden" name="pg" value="$db">
+ <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveindex">
  <input type="submit" name="submit" value="SAVE">
  </form>

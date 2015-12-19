@@ -1,9 +1,6 @@
 # webforms
 
-CGI script for dynamic web forms using a flat file database,
-only server-side
-
-**UNDER CONSTRUCTION**
+CGI script for dynamic web forms using a flat file database, server-side only
 
 ---
 
@@ -52,8 +49,8 @@ any duplicate entry may be deleted and only one retained.
 
 In this case, the index entry 1002 would no longer be present in the
 record tables, and the entry for index 1002 would not be displayed,
-when the record file is rendered. (For the time being, `+` and `-` only
-have different meaning in the base/index file, not yet in record files.)
+when the record file is rendered. This can be changed in the page view,
+however.
 
 ### Configuration file
 
@@ -90,6 +87,11 @@ only `visitor` access (i.e, read-only access to all pages).
 	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
 	# suppress displaying index/base field in page view
 	nopageindex	true
+	# reduce the maximum size of text fields in record input form
+	maxfieldlength	80
+	# pattern of allowed characters in fields
+	# default: all ASCII characters from SPC to ~ (tilde)
+	# fieldchars	' -~'
 	# type	names
 	admin	chief	johnny	sue
 	editor	pam	james
@@ -105,14 +107,14 @@ The script renders various pages, based on CGI environment variables:
 - `vw` view (display selection)
 - `sc` sort column
 - `sd` sort direction
-- `fa` flag if active entry
+- `fa` flag for active/hidden entry
 - `fN` field number N
 
 ### view/command variable `vw`
 
 This variable value selects the view or command.
 
-- undefined or unknown command: default view rendered according to `db` and `pg` values
+- undefined or unknown command: default view rendered according to `db` value
 - `vw=listpages` list all available pages
 - `vw=page` display page
 - `vw=listindex` list all indices
