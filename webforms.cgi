@@ -121,8 +121,15 @@ Content-type: text/html
 <tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perm)</tt>
 </p>
 <p>
-:: <a href="$myself?db=$db&vw=listpages">page list</a>
-:: <a href="$myself?db=$db&vw=listindex">index list</a>
+EOH
+if test "$pg" != ""
+then cat <<EOH
+:: <a href="$myself?db=$db&pg=$pg&vw=page">display page <tt>$pg</tt></a>
+EOH
+fi
+cat <<EOH
+:: <a href="$myself?db=$db&vw=listpages">list pages</a>
+:: <a href="$myself?db=$db&vw=listindex">list index/base</a>
 :: </p>
 <hr />
 <h1>$2</h1>
@@ -204,7 +211,7 @@ tablehead(){
    then skip=`expr $skip - 1`
 # render column title with sort link
    else cat <<EOH
-<th><a href="$myself?db=$db&vw=$vw&sc=$nc&sd=$nd">$field</a></th>
+<th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd">$field</a></th>
 EOH
    fi
    nc=`expr $nc + 1`
@@ -242,7 +249,11 @@ lockfile(){
 }
 
 # release locked file by deleting lockfile
-releasefile(){ /bin/rm -f $1 ; }
+releasefile(){
+ if test "$1" != ""
+ then /bin/rm -f "$1"
+ fi
+}
 
 ### now preparations for the main script!
 
@@ -253,7 +264,7 @@ wdir=${WEBFORMSDIR:-$mydir}
 defcfg=default
 
 # define config file name
-db=`inptvar db`
+db=`inptvar db '.0-9A-Za-z_-'`
 cfg="$wdir/${db:-defcfg}.cfg"
 if test ! -r "$cfg"
 then fatal "configuration file $cfg not readable"
@@ -262,30 +273,33 @@ then fatal "configuration file $cfg not readable"
 fi
 
 # define index/base file name, '.' is wildcard for index name
-idx=`pagefile base . <$cfg`
+idx="`pagefile base . <$cfg`"
 if test ! -r "$idx"
-then fatal "index/base file $cfg not readable"
+then fatal "index/base file $idx not readable"
  exit 9
 fi
 
+permadmin=100
+permeditor=10
+permvisitor=1
 # establish permissions (the higher, the better)
-perm=0
+perms=0
 usr=${REMOTE_USER:-nobody}
 if checkline admin $usr <$cfg
-then perm=100
+then perms=$permadmin
 else
  if checkline editor $usr <$cfg
- then perm=10
+ then perms=$permeditor
  else
 # if "visitor" entries exist, user must be explicitly allowed
   if grep "^visitor" $cfg 2>&1 >/dev/null
   then
    if checkline visitor $usr <$cfg
-   then perm=1
-   else perm=0
+   then perms=$permvisitor
+   else perms=0
    fi
 # otherwise all unknown users are visitors
-  else perm=1
+  else perms=$permvisitor
   fi # visitor
  fi # editor
 fi # admin
@@ -305,11 +319,11 @@ then nopageindex=0
 fi
 
 # define permitted characters for record fields
-fieldchars=`getlines fieldchars <$cfg`
+fieldchars=`getlines fieldchars <$cfg | head -n 1`
 fieldchars=${fieldchars:-$defaultfieldchars}
 
 # at least permission 1 is necessary for running script at all
-if test $perm -lt 1
+if test $perms -lt 1
 then fatal user $usr is not allowed
  exit 9
 fi
@@ -328,26 +342,31 @@ case $sd in
  *) sd=0 ; sortopt='' ;;
 esac
 
-# get and sanitize index value
-in=`inptvar in '0-9a-zA-Z.-'`
+# get and sanitize values
+in=`inptvar in '0-9a-zA-Z-'`
+pg=`inptvar pg '.0-9a-zA-Z-'`
+vw=`inptvar vw '0-9A-Za-z'`
 
 ### now the real work!
 
 # get view/command, and process info / render page
-vw=`inptvar vw '0-9A-Za-z'`
 vw=${vw:-default}
 case $vw in
 
  page)
-  pg=`inptvar pg '0-9A-Za-z'`
-  header "$pg" "`pageinfo page $pg`" "For modification, select index name, or
-<a href=\"$myself?db=$db&in=&vw=editentry\">create new entry.</a>"
+  fa=`inptvar fa '0-9a-z'`
+# set pattern for hidden/active line filter
+  case $fa in
+  shown|1) fa=shown ; i='[+-]' ;;
+  *) fa=hidden ; i='[+]' ;;
+  esac
+  header "$pg" "`pageinfo page $pg`" ""
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
 # make header for user columns of page file
-   tablehead $pagef $nopageindex
-   getlines '[+]' <$pagef | sort $sortopt -k $sc | { IFS="	" # TAB
+   tablehead "$pagef" $nopageindex
+   getlines $i <"$pagef" | sort $sortopt -k $sc | { IFS="	" # TAB
     while read in f1 desc
 # create link to edit view
     do
@@ -355,14 +374,14 @@ case $vw in
 # use first field as link text, and for description of index/base
      then cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&in=$in&vw=editentry">$f1</a>
-    <a href="$myself?db=$db&in=$in&vw=descindex">?</a></td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>
+    <a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a></td>
 EOH
 # use index field, and also render first field
      else cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&in=$in&vw=editentry">$in</a>
-    <a href="$myself?db=$db&in=$in&vw=descindex">?</a></td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>
+    <a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a></td>
 <td>$f1</td>
 EOH
      fi
@@ -373,6 +392,11 @@ EOH
     }
    cat <<EOH
 </table>
+<p>for modification, select index name, or
+<a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
+<p><a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hide</a> or
+<a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">show</a> hidden entries
+(currently $fa)</p>
 EOH
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
@@ -398,9 +422,9 @@ EOH
  listindex) 
   header "index" "List of Index Values" "This is the list of all index values available for database <tt>$db</tt>.<br />Click links in first column to edit."
 # make header for all columns of index file
-  tablehead $idx 0
+  tablehead "$idx" 0
 # get lines with '+' or '-'
-  getlines '[+-]' <$idx | sort $sortopt -k $sc | { IFS="	" # TAB
+  getlines '[+-]' <"$idx" | sort $sortopt -k $sc | { IFS="	" # TAB
 # some local variables for new index values
    local maxind pastind i
    maxind=0
@@ -409,7 +433,7 @@ EOH
 # use index for link to edit view
    do cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&in=$in&vw=editindex">$in</a></td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">$in</a></td>
 EOH
 # split description into table fields
     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
@@ -429,7 +453,7 @@ EOH
   cat <<EOH
 </table>
  <p>create
- <a href="$myself?db=$db&in=$newindex&vw=editindex">new index entry</a>
+ <a href="$myself?db=$db&pg=$pg&in=$newindex&vw=editindex">new index entry</a>
 </p>
 EOH
   footer ;; # listindex.
@@ -437,10 +461,10 @@ EOH
  descindex)
   header "index/base $in" 'Index/base description' "Values associated with index <tt>$in</tt>"
   echo '<pre>'
-  getlines '[+-]' <$idx | getlines $in
+  getlines '[+-]' <"$idx" | getlines $in
   echo '</pre>'
   cat <<EOH
-<p><a href="$myself?db=$db&in=$in&vw=editindex">EDIT</a></p>
+<p><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">EDIT</a></p>
 EOH
   footer ;; # descindex.
 
@@ -450,7 +474,7 @@ EOH
   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
-  tablehead $idx 0
+  tablehead "$idx" 0
 # get number of rendered header fields
   totalcols=$?
   cat <<EOH
@@ -458,7 +482,7 @@ EOH
   <td>SHOW<input type="checkbox" name="fa" value="show" checked>
    <input type="text" name="in" value="$in" /></td>
 EOH
-  getlines '[+-]' <$idx | getlines $in | head -n 1 | sed -e 's:	:\
+  getlines '[+-]' <"$idx" | getlines $in | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | { fn=1 # index field already counts as 1
    while read field
    do cat <<EOH
@@ -477,6 +501,7 @@ EOH
   tablefoot
   cat <<EOH
  <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="pg" value="$db">
  <input type="hidden" name="vw" value="saveindex">
  <input type="submit" name="submit" value="SAVE">
  </form>
@@ -485,17 +510,16 @@ EOH
 
  saveindex)
   header "saveindex" "Saving index entry" "Attempting to save index $in ..."
-  inlock="`lockfile $idx`"
-  if test "$inlock" = ""
+  inlock="`lockfile \"$idx\"`"
+  if test "$inlock" = "" -o ! -w "$idx"
   then cat <<EOH
-<p><em>FAILED</em> due to locked file <tt>$idx</tt>!
-<br />Please wait some time, and try again, or ask a wizard!
+<p><em>FAILED</em> due to locked or unwritable file <tt>$idx</tt>!
 <br />Depending on your browser, it may be possible to recover your entries by clicking "Back".
 </p>
 EOH
   else
 # copy everything not containing selected index (SPC&TAB in patterns)
-   grep -v "^[+-][ 	][ 	]*$in" <$idx >$tmpf
+   grep -v "^[+-][ 	][ 	]*$in" <"$idx" >$tmpf
 # show new/modified entry?
    if test "`inptvar fa`" = "show"
    then
@@ -513,25 +537,30 @@ EOH
     echo "$newline" >>$tmpf
     echo '<p>as available entry</p><p><pre>'
 # .. else add present data as hidden entry
-   else grep "^[+-][ 	][ 	]*$in" <$idx | head -n 1 | sed -e 's/^+/-/' >>$tmpf
+   else grep "^[+-][ 	][ 	]*$in" <"$idx" | head -n 1 | sed -e 's/^+/-/' >>$tmpf
     echo '<p>as hidden entry</p><p><pre>'
    fi
    tail -n 1 $tmpf
    echo '</pre></p>'
+   if test $perms -ge $permadmin
+   then
 # save updated index file
-   cat $tmpf > $idx
-   cat <<EOH
-<p><a href="$myself?db=$db&vw=listindex&sc=1&sd=1">DONE!</a></p>
+    cat $tmpf > "$idx"
+    cat <<EOH
+<p><a href="$myself?db=$db&pg=$pg&vw=listindex&sc=1&sd=1">DONE!</a></p>
 EOH
-   releasefile "$inlock"
+   else cat <<EOH
+<p>FAILED due to bad permissions $perms &lt; $permadmin</p>
+EOH
+   fi
   fi
+  releasefile "$inlock"
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Edit page entry" "Edit fields and SAVE (HIDE to delete an entry without saving)"
+  header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE (HIDE to delete an entry without saving)"
   maxflength=`getlines maxlength <$cfg | head -n 1`
   maxflength=${maxflength:-199}
-  pg=`inptvar pg '0-9A-Za-z'`
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
@@ -539,15 +568,15 @@ EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
 # make header for user columns of page file, with all columns
-   tablehead $pagef 0
+   tablehead "$pagef" 0
 # get number of rendered header fields
    totalcols=$?
 # delete link
    cat <<EOH
- <tr><td><select name="id">
+ <tr><td><select name="in">
 EOH
 # get all possible index names, only uniques
-  getlines '[+]' <$idx | sed -e 's/	.*//' | sort -u | { local nin
+  getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | { local nin
    while read nin
    do if test "$nin" = "$in"
     then cat <<EOH
@@ -563,7 +592,7 @@ EOH
  </select></td>
 EOH
 # read record fields of current index, split onto separate lines
-   getlines '[+-]' <$pagef | getlines $in | head -n 1 | sed -e 's:	:\
+   getlines '[+-]' <"$pagef" | getlines $in | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | { local fn field af
     fn=1
     af=autofocus # for first field
@@ -589,10 +618,11 @@ EOH
    tablefoot
    cat <<EOH
  <input type="hidden" name="db" value="$db">
+ <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveentry">
  <input type="hidden" name="fa" value="save">
  <input type="submit" name="submit" value="SAVE">
- <a href="$myself?db=$db&in=$in&vw=saveentry&fa=hide">HIDE</a>
+ <a href="$myself?db=$db&pg=$pg&in=$in&vw=saveentry&fa=hide">HIDE</a>
  </form>
 EOH
   else cat <<EOH
@@ -602,46 +632,58 @@ EOH
   footer ;; # editentry.
 
  saveentry)
-  header 'save entry' "Save entry" "Please wait ..."
-  cat <<EOH
-<pre>
-    db=`inptvar db`
-    pg=`inptvar pg`
-    in=`inptvar in`
-    vw=`inptvar vw`
-    fa=`inptvar fa`
-    f1=`inptvar f1`
-    f2=`inptvar f2`
-    f3=`inptvar f3`
-    f4=`inptvar f4`
-    f5=`inptvar f5`
-</pre>
-<hr />
-<a href="$myself?db=$db&vw=listindex&sc=1&sd=1">show index</a>
+  header "saveentry" "Saving page entry" "Attempting to save entry for $in on page $pg ..."
+  pagef="`pagefile page $pg`"
+  inlock="`lockfile \"$pagef\"`"
+  if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
+   then cat <<EOH
+<p><em>FAILED</em> due to locked/unreadable/unwritable page file <tt>$page</tt>!
+<br />Depending on your browser, it may be possible to recover your entries by clicking "Back".
+</p>
 EOH
+   else
+# copy everything not containing selected index (SPC&TAB in patterns)
+    grep -v "^[+-][ 	][ 	]*$in" <"$pagef" >$tmpf
+# show new/modified entry?
+    if test "`inptvar fa`" = "save"
+    then
+# .. add new/modified fields to initial flag and index name
+     i=1 ; newline="+	$in"
+     nf="`grep ^f$i= $inpt | sed -e s/f$i=//`"
+     nf="`inptvar f$i \"$fieldchars\"`"
+     while test "$nf" != ""
+     do
+# separate fields by TAB
+      newline="$newline	$nf"
+      i=`expr $i + 1`
+      nf="`inptvar f$i \"$fieldchars\"`"
+     done
+     echo "$newline" >>$tmpf
+     echo '<p>as shown entry</p><p><pre>'
+# .. else add present data as hidden entry
+    else grep "^[+-][ 	][ 	]*$in" <"$pagef" | head -n 1 | sed -e 's/^+/-/' >>$tmpf
+     echo '<p>as hidden entry</p><p><pre>'
+    fi
+    tail -n 1 $tmpf
+    echo '</pre></p>'
+    if test $perms -ge $permeditor
+# save updated page file
+    then
+     cat $tmpf > "$pagef"
+     cat <<EOH
+<p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a></p>
+EOH
+    else cat <<EOH
+<p>FAILED due to bad permissions $perms &lt; $permeditor</p>
+EOH
+    fi
+   fi
+   releasefile "$inlock"
   footer ;; # saveentry.
 
- test) header test Test TEST ; footer ;;
- *) # for debugging
-   echo Content-type:text/plain
-   echo
-   echo "db=`inptvar db` (cfg=$cfg)"
-   echo "pg=`inptvar pg`"
-   echo "in=`inptvar in`"
-   echo "vw=`inptvar vw`"
-   echo "f1=`inptvar f1`"
-   echo
-   echo admins:
-   getlines admin <$cfg
-   echo editors:
-   getlines editor <$cfg
-   echo visitors:
-   getlines visitor <$cfg
-   echo permissions=$perm for user=$usr
-   echo
-   echo inpt:
-   cat $inpt
- ;;
+ *) # default
+  header "$myself" "$myself $db" ""
+  footer ;;
 esac
 
 # cleanup and quit
