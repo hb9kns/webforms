@@ -25,3 +25,4 @@ _-Yargo_
 + Basis-Edit: Tabelle wie fuer Seitn, aber Umblend- statt Del-Knopf (aendert Flag)
 + Funktion fuer Auswertung Query-String: Var.name als Argument, entspr Wert zurueck mit Escape-Konversion durch sed (nach Umsetzung &->TAB), aber nur bestimmte Werte, andere geloescht/ignoriert
 + sanitize entry fields, especially for file operations
+- apply change in index visibility to all pages as well

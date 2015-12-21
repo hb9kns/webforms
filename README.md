@@ -47,10 +47,10 @@ any duplicate entry may be deleted and only one retained.
 	+	1003	April 1984	present
 	+	1004	June 2014	November 2015
 
-In this case, the index entry 1002 would no longer be present in the
+In this case, the index entry 1002 would no longer be available in the
 record tables, and the entry for index 1002 would not be displayed,
-when the record file is rendered. This can be changed in the page view,
-however.
+when the record file is rendered.
+The latter can be changed in the page view, however.
 
 ### Configuration file
 
