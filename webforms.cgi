@@ -258,13 +258,41 @@ releasefile(){
 # render warning about missing permissions (arg.1 = necessary)
 permwarn(){
  local p
- p=${$1:-0}
+ p=${1:-0}
  if test $p -gt $perms
  then cat <<EOH
 <p><em>Warning!</em>Your permission level $perms is lower than necessary ($p) for modification!<br />
 Therefore, any save/modification action may fail!</p>
 EOH
  fi
+}
+
+# function for displaying index entries
+# maxindex must be initialised globally, as well as CGI variables db, pg, in
+# arg.1,2 = additional tags for each index entry
+renderindices(){
+ local pastind i ofs
+ ofs="$IFS"
+ IFS="	" # TAB
+ i=1
+ while read in desc
+# use index for link to edit view, marked with tags
+ do cat <<EOH
+<tr>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">$1$in$2</a></td>
+EOH
+# split description into table fields
+  echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
+  echo '</tr>'
+# convert last index to numeric value and increment,
+# or set to counter value, if non-numeric
+  pastind=`expr $in + 1` ; pastind=${pastind:-$i}
+  if test $maxindex -lt $pastind
+  then maxindex=$pastind
+  fi
+  i=`expr $i + 1`
+ done
+ IFS="$ofs"
 }
 
 ### now preparations for the main script!
@@ -432,40 +460,20 @@ EOH
   footer ;; # listpages.
 
  listindex) 
-  header "index" "List of Index Values" "This is the list of all index values available for database <tt>$db</tt>.<br />Click links in first column to edit."
+  header "index" "List of Index Values" "This is the list of all index values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
 # make header for all columns of index file
   tablehead "$idx" 0
-# get lines with '+' or '-'
-  getlines '[+-]' <"$idx" | sort $sortopt -k $sc | { IFS="	" # TAB
-# some local variables for new index values
-   local maxind pastind i
-   maxind=0
-   i=1
-   while read in desc
-# use index for link to edit view
-   do cat <<EOH
-<tr>
-<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">$in</a></td>
-EOH
-# split description into table fields
-    echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
-    echo '</tr>'
-# convert last index to numeric value and increment,
-# or set to counter value, if non-numeric
-    pastind=`expr $in + 1` ; pastind=${pastind:-$i}
-    if test $maxind -lt $pastind
-    then maxind=$pastind
-    fi
-    i=`expr $i + 1`
-   done
-# report next index outside of loop
-   echo $maxind >$tmpf
-   }
-  newindex=`head -n 1 $tmpf`
+# will be updated by renderindices()
+  maxindex=0
+# active ones
+  getlines '[+]' <"$idx" | sort $sortopt -k $sc | renderindices '<b>' '</b>'
+# hidden ones
+  echo '<tr><td>---</td></tr>'
+  getlines '[-]' <"$idx" | sort $sortopt -k $sc | renderindices '<strike>' '</strike>'
   cat <<EOH
 </table>
  <p>create
- <a href="$myself?db=$db&pg=$pg&in=$newindex&vw=editindex">new index entry</a>
+ <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
 </p>
 EOH
   footer ;; # listindex.
@@ -527,7 +535,7 @@ EOH
   if test "$inlock" = "" -o ! -w "$idx"
   then cat <<EOH
 <p><em>FAILED</em> due to locked or unwritable file <tt>$idx</tt>!
-<br />Depending on your browser, it may be possible to recover your entries by clicking "Back".
+<br />Depending on your browser, it may be possible to recover your entries by selecting "Back".
 </p>
 EOH
   else
@@ -652,7 +660,7 @@ EOH
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
    then cat <<EOH
 <p><em>FAILED</em> due to locked/unreadable/unwritable page file <tt>$page</tt>!
-<br />Depending on your browser, it may be possible to recover your entries by clicking "Back".
+<br />Depending on your browser, it may be possible to recover your entries by selecting "Back".
 </p>
 EOH
    else
