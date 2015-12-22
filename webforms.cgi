@@ -255,6 +255,18 @@ releasefile(){
  fi
 }
 
+# render warning about missing permissions (arg.1 = necessary)
+permwarn(){
+ local p
+ p=${$1:-0}
+ if test $p -gt $perms
+ then cat <<EOH
+<p><em>Warning!</em>Your permission level $perms is lower than necessary ($p) for modification!<br />
+Therefore, any save/modification action may fail!</p>
+EOH
+ fi
+}
+
 ### now preparations for the main script!
 
 # set root for configuration files / working directory
@@ -469,7 +481,8 @@ EOH
   footer ;; # descindex.
 
  editindex)
-  header "edit index" "Edit index/base fields" "Edit fields and SAVE.<br />Notes: first field (index) must be unique, will overwrite old entry if already present! To suppress listing of this index on record page, deselect SHOW!"
+  header "edit index" "Edit index/base fields" "Edit fields and SAVE.<br />Notes: first field (index) must be unique, will overwrite old entry if already present! To suppress listing of this index on record page, deselect SHOW."
+  permwarn $permadmin
 # get selected index (but only the first one)
   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
@@ -479,8 +492,7 @@ EOH
   totalcols=$?
   cat <<EOH
  <tr>
-  <td>SHOW<input type="checkbox" name="fa" value="show" checked>
-   <input type="text" name="in" value="$in" /></td>
+  <td><input type="text" name="in" value="$in" /></td>
 EOH
   getlines '[+-]' <"$idx" | getlines $in | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | { fn=1 # index field already counts as 1
@@ -500,6 +512,7 @@ EOH
   echo ' </tr>'
   tablefoot
   cat <<EOH
+SHOW<input type="checkbox" name="fa" value="show" checked>
  <input type="hidden" name="db" value="$db">
  <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveindex">
@@ -559,6 +572,7 @@ EOH
 
  editentry)
   header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE (HIDE to delete an entry without saving)"
+  permwarn $permeditor
   maxflength=`getlines maxlength <$cfg | head -n 1`
   maxflength=${maxflength:-199}
   pagef="`pagefile page $pg`"
