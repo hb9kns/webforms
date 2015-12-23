@@ -579,7 +579,7 @@ EOH
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE (HIDE to delete an entry without saving)"
+  header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, optionally HIDE entry"
   permwarn $permeditor
   maxflength=`getlines maxlength <$cfg | head -n 1`
   maxflength=${maxflength:-199}
@@ -643,8 +643,8 @@ EOH
  <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveentry">
  <input type="hidden" name="fa" value="save">
+ <input type="checkbox" name="fa" value="hide">HIDE
  <input type="submit" name="submit" value="SAVE">
- <a href="$myself?db=$db&pg=$pg&in=$in&vw=saveentry&fa=hide">HIDE</a>
  </form>
 EOH
   else cat <<EOH
@@ -658,49 +658,50 @@ EOH
   pagef="`pagefile page $pg`"
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
-   then cat <<EOH
+  then cat <<EOH
 <p><em>FAILED</em> due to locked/unreadable/unwritable page file <tt>$page</tt>!
 <br />Depending on your browser, it may be possible to recover your entries by selecting "Back".
 </p>
 EOH
-   else
+  else
 # copy everything not containing selected index (SPC&TAB in patterns)
-    grep -v "^[+-][ 	][ 	]*$in" <"$pagef" >$tmpf
-# show new/modified entry?
-    if test "`inptvar fa`" = "save"
-    then
-# .. add new/modified fields to initial flag and index name
-     i=1 ; newline="+	$in"
-     nf="`grep ^f$i= $inpt | sed -e s/f$i=//`"
-     nf="`inptvar f$i \"$fieldchars\"`"
-     while test "$nf" != ""
-     do
+   grep -v "^[+-][ 	][ 	]*$in" <"$pagef" >$tmpf
+# show/hide?
+   if test "`inptvar fa`" = "save"
+   then
+    newline="+	$in"
+    echo '<p>as shown entry</p><p><pre>'
+   else
+    newline="-	$in"
+    echo '<p>as hidden entry</p><p><pre>'
+   fi
+# add new/modified fields to initial flag and index name
+   i=1
+   nf="`inptvar f$i \"$fieldchars\"`"
+   while test "$nf" != ""
+   do
 # separate fields by TAB
-      newline="$newline	$nf"
-      i=`expr $i + 1`
-      nf="`inptvar f$i \"$fieldchars\"`"
-     done
-     echo "$newline" >>$tmpf
-     echo '<p>as shown entry</p><p><pre>'
-# .. else add present data as hidden entry
-    else grep "^[+-][ 	][ 	]*$in" <"$pagef" | head -n 1 | sed -e 's/^+/-/' >>$tmpf
-     echo '<p>as hidden entry</p><p><pre>'
-    fi
-    tail -n 1 $tmpf
-    echo '</pre></p>'
-    if test $perms -ge $permeditor
+    newline="$newline	$nf"
+    i=`expr $i + 1`
+    nf="`inptvar f$i \"$fieldchars\"`"
+   done
+   echo "$newline" >>$tmpf
+# report last line, i.e saved entry
+   tail -n 1 $tmpf
+   echo '</pre></p>'
+   if test $perms -ge $permeditor
 # save updated page file
-    then
-     cat $tmpf > "$pagef"
-     cat <<EOH
+   then
+    cat $tmpf > "$pagef"
+    cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a></p>
 EOH
-    else cat <<EOH
+   else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permeditor</p>
 EOH
-    fi
    fi
-   releasefile "$inlock"
+  fi
+  releasefile "$inlock"
   footer ;; # saveentry.
 
  *) # default
