@@ -292,6 +292,8 @@ EOH
   fi
   i=`expr $i + 1`
  done
+# report outside
+ echo $maxindex >$tmpf
  IFS="$ofs"
 }
 
@@ -463,13 +465,16 @@ EOH
   header "index" "List of Index Values" "This is the list of all index values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
 # make header for all columns of index file
   tablehead "$idx" 0
-# will be updated by renderindices()
+# will be used by renderindices()
   maxindex=0
 # active ones
   getlines '[+]' <"$idx" | sort $sortopt -k $sc | renderindices '<b>' '</b>'
+# get counter value reported via tmpf
+  maxindex=`head -n 1 $tmpf`
 # hidden ones
   echo '<tr><td>---</td></tr>'
   getlines '[-]' <"$idx" | sort $sortopt -k $sc | renderindices '<strike>' '</strike>'
+  maxindex=`head -n 1 $tmpf`
   cat <<EOH
 </table>
  <p>create
