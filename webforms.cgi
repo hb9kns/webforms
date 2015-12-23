@@ -541,26 +541,27 @@ EOH
   else
 # copy everything not containing selected index (SPC&TAB in patterns)
    grep -v "^[+-][ 	][ 	]*$in" <"$idx" >$tmpf
-# show new/modified entry?
+# show/hide?
    if test "`inptvar fa`" = "show"
    then
-# .. add new/modified fields to initial flag and index name
-    i=1 ; newline="+	$in"
-    nf="`grep ^f$i= $inpt | sed -e s/f$i=//`"
-    nf="`inptvar f$i \"$fieldchars\"`"
-    while test "$nf" != ""
-    do
-# separate fields by TAB
-     newline="$newline	$nf"
-     i=`expr $i + 1`
-     nf="`inptvar f$i \"$fieldchars\"`"
-    done
-    echo "$newline" >>$tmpf
+    newline="+	$in"
     echo '<p>as available entry</p><p><pre>'
-# .. else add present data as hidden entry
-   else grep "^[+-][ 	][ 	]*$in" <"$idx" | head -n 1 | sed -e 's/^+/-/' >>$tmpf
+   else
+    newline="-	$in"
     echo '<p>as hidden entry</p><p><pre>'
    fi
+# add new/modified fields to initial flag and index name
+   i=1
+   nf="`inptvar f$i \"$fieldchars\"`"
+   while test "$nf" != ""
+   do
+# separate fields by TAB
+    newline="$newline	$nf"
+    i=`expr $i + 1`
+    nf="`inptvar f$i \"$fieldchars\"`"
+   done
+   echo "$newline" >>$tmpf
+# report new/modified entry
    tail -n 1 $tmpf
    echo '</pre></p>'
    if test $perms -ge $permadmin
@@ -579,7 +580,7 @@ EOH
   footer ;; # saveindex.
 
  editentry)
-  header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, optionally HIDE entry"
+  header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, uncheck SHOW to hide entry"
   permwarn $permeditor
   maxflength=`getlines maxlength <$cfg | head -n 1`
   maxflength=${maxflength:-199}
@@ -642,8 +643,7 @@ EOH
  <input type="hidden" name="db" value="$db">
  <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveentry">
- <input type="hidden" name="fa" value="save">
- <input type="checkbox" name="fa" value="hide">HIDE
+ <input type="checkbox" name="fa" value="show" checked>SHOW
  <input type="submit" name="submit" value="SAVE">
  </form>
 EOH
@@ -667,7 +667,7 @@ EOH
 # copy everything not containing selected index (SPC&TAB in patterns)
    grep -v "^[+-][ 	][ 	]*$in" <"$pagef" >$tmpf
 # show/hide?
-   if test "`inptvar fa`" = "save"
+   if test "`inptvar fa`" = "show"
    then
     newline="+	$in"
     echo '<p>as shown entry</p><p><pre>'
