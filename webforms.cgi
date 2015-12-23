@@ -526,6 +526,7 @@ EOH
   tablefoot
   cat <<EOH
 SHOW<input type="checkbox" name="fa" value="show" checked>
+(also apply to all PAGES<input type="checkbox" name="pages" value="all">)
  <input type="hidden" name="db" value="$db">
  <input type="hidden" name="pg" value="$pg">
  <input type="hidden" name="vw" value="saveindex">
@@ -579,6 +580,41 @@ EOH
 <p><a href="$myself?db=$db&pg=$pg&vw=listindex&sc=1&sd=1">DONE!</a>
 (+ indicates shown entry, - hidden entry)</p>
 EOH
+    if test "`inptvar pages`" = "all"
+# apply hide/show to all pages
+    then
+     if test "`inptvar fa`" = "show"
+     then
+      echo '<hr /><p>also applying SHOW'
+      flg='+'
+     else
+      echo '<hr /><p>also applying HIDE'
+      flg='-'
+     fi
+     echo 'to all related page entries:</p><ul>'
+# get all pages for the current database
+     getlines page <$cfg | { while read pname _
+     do
+      pagef="`pagefile page $pname`"
+      plock="`lockfile \"$pagef\"`"
+      if test "$plock" != "" -a -r "$pagef" -a -w "$pagef"
+      then cat <<EOH
+<li><tt>$pname</tt></li>
+EOH
+# copy everything not containing selected index (SPC&TAB in patterns)
+       grep -v "^[+-][ 	]$in" <"$pagef" >$tmpf
+# replace flag for selected index
+       grep "^[+-][ 	]$in" <"$pagef" | sed -e "s/.	/$flg	/" >>$tmpf
+       cat $tmpf >"$pagef"
+      else cat <<EOH
+<li>FAILED for pagefile <tt>$pagef</tt> of page <tt>$pname</tt></li>
+EOH
+      fi
+      releasefile "$plock"
+     done
+     echo '</ul>'
+     }
+    fi # apply to all pages.
    else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permadmin</p>
 EOH
