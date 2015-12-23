@@ -552,10 +552,8 @@ EOH
    grep -v "^[+-][ 	]$in" <"$idx" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
-   then
-    newline="+	$in"
-   else
-    newline="-	$in"
+   then newline="+	$in"
+   else newline="-	$in"
    fi
 # add new/modified fields to initial flag and index name
    i=1
@@ -673,38 +671,41 @@ EOH
 <br />Depending on your browser, it may be possible to recover your entries by selecting "Back".
 </p>
 EOH
+  elif test "$in" = ""
+  then echo '<p><em>FAILED</em> due to empty index field!</p>'
   else
+  tablehead "$pagef" 0
+  totalcols=$?
 # copy everything not containing selected index (SPC&TAB in patterns)
-   grep -v "^[+-][ 	][ 	]*$in" <"$pagef" >$tmpf
+   grep -v "^[+-][ 	]$in" <"$pagef" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
-   then
-    newline="+	$in"
-    echo '<p>as shown entry</p><p><pre>'
-   else
-    newline="-	$in"
-    echo '<p>as hidden entry</p><p><pre>'
+   then newline="+	$in"
+   else newline="-	$in"
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   nf="`inptvar f$i \"$fieldchars\"`"
-   while test "$nf" != ""
+   while test $i -lt $totalcols
    do
-# separate fields by TAB
-    newline="$newline	$nf"
-    i=`expr $i + 1`
+# separate fields by TAB, replace empty fields by SPC
     nf="`inptvar f$i \"$fieldchars\"`"
+    newline="$newline	${nf:- }"
+    i=`expr $i + 1`
    done
    echo "$newline" >>$tmpf
 # report last line, i.e saved entry
-   tail -n 1 $tmpf
-   echo '</pre></p>'
+   echo '<tr><td>'
+# replace first TAB by SPC; sed commands are 's:TAB:SPC:;s:TAB:...'
+   tail -n 1 $tmpf | sed -e 's:	: :;s:	:</td><td>:g'
+   echo '</tr></td>'
+   tablefoot
    if test $perms -ge $permeditor
 # save updated page file
    then
     cat $tmpf > "$pagef"
     cat <<EOH
-<p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a></p>
+<p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a>
+(+ indicates shown entry, - hidden entry)</p>
 EOH
    else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permeditor</p>
