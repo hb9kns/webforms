@@ -2,11 +2,32 @@
 # webforms.cgi (2015 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
 
-GITHOME=http://gitlab.com/yargo/webforms
+# set root for temporary files
+# (make sure this is a pattern for non-important files, as there
+# will be an 'rm -f $tmpr*' command at the end of the script!)
+tmpr=${TMP:-/tmp}/webform-$user-tmp$$
+
+# save new version of database; arg.1 = modified file, arg.2 = remarks
+# (user name and REMOTE_HOST will be added to the remarks)
+dobackup(){
+ dmesg="$2 (user=$usr, host=$REMOTE_HOST)"
+# comment/uncomment below as desired!
+## git version
+ git add "$1" && git commit -m "$dmesg"
+## rcs version
+# ci -u -w$usr -m"$dmesg" "$1"
+## poor man's version
+# diff -e "$1.old" "$1" >"$1.diff"
+# cat "$1" > "$1.old"
+}
 
 # default permitted characters in record fields: SPC and printable ASCII
 # as 'tr' pattern
 defaultfieldchars=' -~'
+
+##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
+
+pjthome=http://gitlab.com/yargo/webforms
 
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
@@ -16,7 +37,7 @@ This is $0
 which must be run as a CGI script, expecting input from POST or GET requests.
 
 See accompanying README file, or online repository at
-	$GITHOME
+	$pjthome
 for further information.
 
 EOT
@@ -26,12 +47,9 @@ fi
 myself="$0"
 mydir=`dirname "$0"`
 
-# set root for temporary files
-TMPR=${TMP:-/tmp}/webformtmp$$
-
 # temp files for input
-tmpf=$TMPR.tmp
-inpt=$TMPR.inp
+tmpf=$tmpr.tmp
+inpt=$tmpr.inp
 
 cat >$tmpf
 echo "$QUERY_STRING" >>$tmpf
@@ -52,7 +70,7 @@ cat $tmpf | tr '+;&' '
 
 # end script after cleanup with exit code as arg.1
 finish(){
-/bin/rm -f ${TMPR}*
+/bin/rm -f ${tmpr}*
 sleep 1 # to reduce possible load
 # exit code arg.1, or 0 if missing
 exit ${1:-0}
@@ -145,7 +163,7 @@ EOH
 footer(){
 cat <<EOH
 <hr />
-<p><small><i>processed by <a href="$GITHOME">$myself</a></i></small></p>
+<p><small><i>processed by <a href="$pjthome">$myself</a></i></small></p>
 <pre>
 EOH
 # cat $inpt # for debugging
@@ -383,6 +401,8 @@ case $sd in
  1) sortopt='-r' ;;
  *) sd=0 ; sortopt='' ;;
 esac
+# also ignore lower/uppercase
+sortopt="$sortopt -f"
 
 # get and sanitize values
 in=`inptvar in '0-9a-zA-Z-'`
