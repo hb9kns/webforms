@@ -1,8 +1,38 @@
 # webforms
 
-CGI script for dynamic web forms using a flat file database, server-side only
+CGI script for dynamic web forms using flat file databases,
+server-side only
 
 ---
+
+## Overview
+
+Web-based database applications often need complicated installation
+of libraries or programs, or rely on Javascript and other techniques
+which depend on the available clients. The script presented here is a
+simple solution for simple problems, and it only needs a working Unix
+environment and a simple webserver with CGI capability.
+
+The data structure handled by the present script is as follows.  A list
+of unique names, each with optional attributes, is the backbone of the
+entire structure, called the index or base.  Each of these index names
+may have exactly one entry in each of a number of pages, while all
+entries in a given page have the same additional fields.
+
+In principle, the same functionality can be provided by one single big
+list with exactly one entry per index name, but it might be impractical
+to handle and process.
+
+An example of this structure may be an index or base of user names
+(or unique numbers), with attributes like full name, address, telephone
+numbers and e-mail address, and a collection of lists (pages) where each
+person has exactly one entry (or none at all). The lists could contain
+information like access rights to various equipment, subscription to
+mailing lists, number of hours worked for certain time period, etc.
+
+Another example would be an index of computers with attributes like
+system responsibles and location or use, and lists with patch information,
+available periphery/accessories, or running costs.
 
 ## Files
 
