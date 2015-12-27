@@ -51,7 +51,7 @@ EOT
 exit 9
 fi
 
-myself="$0"
+myself=`basename "$0"`
 mydir=`dirname "$0"`
 
 # temp files for input
@@ -440,21 +440,19 @@ case $vw in
 # create link to edit view
     do
      if test $nopageindex = 1
-# use first field as link text, and for description of index/base
+# use first field as link text
      then cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>
-    <a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a></td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 EOH
-# use index field, and also render first field
+# use index field, and also show first field
      else cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>
-    <a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a></td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 <td>$f1</td>
 EOH
      fi
-# split remaining description into table fields and render
+# split remaining description into table fields
      echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
      echo '</tr>'
     done
