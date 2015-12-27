@@ -149,12 +149,12 @@ Content-type: text/html
 EOH
 if test "$pg" != ""
 then cat <<EOH
-:: <a href="$myself?db=$db&pg=$pg&vw=page">display page <tt>$pg</tt></a>
+:: <a href="$myself?db=$db&pg=$pg&vw=page">&laquo;<tt>$pg</tt>&raquo;</a>
 EOH
 fi
 cat <<EOH
-:: <a href="$myself?db=$db&vw=listpages">list pages</a>
-:: <a href="$myself?db=$db&vw=listindex">list index/base</a>
+:: <a href="$myself?db=$db&vw=listpages">all pages</a>
+:: <a href="$myself?db=$db&vw=listindex">index/base</a>
 :: </p>
 <hr />
 <h1>$2</h1>
@@ -473,13 +473,13 @@ EOH
 
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
-  echo '<table><tr><th>page name</th><th>page description</th></tr>'
+  echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
   getlines page <$cfg | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
 <td><a href="$myself?db=$db&pg=$name&vw=page">$name</a></td>
-<td>$desc</td></tr>
+<td><i>$desc</i></td></tr>
 EOH
    done
    }
@@ -487,7 +487,7 @@ EOH
   footer ;; # listpages.
 
  listindex) 
-  header "index" "List of Index Values" "This is the list of all index values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
+  header "index" "List of Index/Base Values" "This is the list of all index/base values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
 # make header for all columns of index file
   tablehead "$idx" 0
 # will be used by renderindices()
@@ -670,7 +670,7 @@ EOH
  <tr><td><select name="in">
 EOH
 # get all possible index names, only uniques
-  getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | { local nin
+  getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
    while read nin
    do if test "$nin" = "$in"
     then cat <<EOH
@@ -687,7 +687,7 @@ EOH
 EOH
 # read record fields of current index, split onto separate lines
    getlines '[+-]' <"$pagef" | getlines $in | head -n 1 | sed -e 's:	:\
-:g;s/"/\\"/g' | { local fn field af
+:g;s/"/\\"/g' | {
     fn=1
     af=autofocus # for first field
     while read field
