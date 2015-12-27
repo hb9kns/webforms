@@ -11,14 +11,21 @@ tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 # (user name and REMOTE_HOST will be added to the remarks)
 dobackup(){
  dmesg="$2 (user=$usr, host=$REMOTE_HOST)"
-# comment/uncomment below as desired!
+# comment/uncomment below as desired! commenting out all is also possible
 ## git version
- git add "$1" && git commit -m "$dmesg"
+ #git add "$1" && git commit -m "$dmesg"
 ## rcs version
-# ci -u -w$usr -m"$dmesg" "$1"
-## poor man's version
-# diff -e "$1.old" "$1" >"$1.diff"
-# cat "$1" > "$1.old"
+ #ci -l -w$usr -m"$dmesg" "$1"
+## poor man's version -- if commenting, do all lines of <<HERE document!
+ cat <<EOH >>$1.diff
+
+## `date '+%y-%m-%d,%H:%M'` : $dmesg
+EOH
+# ed-like diff (shortest, and can be more easily replayed)
+ diff -e "$1.old" "$1" >>"$1.diff"
+ cat "$1" > "$1.old"
+# make sure backup files cannot be read by all
+ chmod o-rwx "$1.old" "$1.diff"
 }
 
 # default permitted characters in record fields: SPC and printable ASCII
@@ -596,6 +603,7 @@ EOH
    then
 # save updated index file
     cat $tmpf > "$idx"
+    dobackup "$idx" "saveindex for $in"
     cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&vw=listindex&sc=1&sd=1">DONE!</a>
 (+ indicates shown entry, - hidden entry)</p>
@@ -626,6 +634,7 @@ EOH
 # replace flag for selected index
        grep "^[+-][ 	]$in" <"$pagef" | sed -e "s/.	/$flg	/" >>$tmpf
        cat $tmpf >"$pagef"
+       dobackup "$pagef" "saveindex for $in on page $pname"
       else cat <<EOH
 <li>FAILED for pagefile <tt>$pagef</tt> of page <tt>$pname</tt></li>
 EOH
@@ -759,6 +768,7 @@ EOH
 # save updated page file
    then
     cat $tmpf > "$pagef"
+    dobackup "$pagef" "saveentry for $in"
     cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a>
 (+ indicates shown entry, - hidden entry)</p>
