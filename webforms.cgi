@@ -385,6 +385,10 @@ if checkline nopageindex 0 <$cfg
 then nopageindex=0
 fi
 
+# define warning for empty fields
+emptywarn=`getlines emptywarn <$cfg | head -n 1`
+emptywarn=${emptywarn:-' '}
+
 # define permitted characters for record fields
 fieldchars=`getlines fieldchars <$cfg | head -n 1`
 fieldchars=${fieldchars:-$defaultfieldchars}
@@ -445,15 +449,16 @@ case $vw in
 <tr>
 <td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 EOH
-# use index field, and also show first field
-     else cat <<EOH
+# use index field, and also show first field (possibly with warning)
+     else sed -e "s:<td> *</td>:<td>$emptywarn</td>:g" <<EOH
 <tr>
 <td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 <td>$f1</td>
 EOH
      fi
-# split remaining description into table fields
-     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
+# split remaining description into table fields, add warnings
+     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g' |
+      sed -e "s:<td> *</td>:<td>$emptywarn</td>:g"
      echo '</tr>'
     done
     }
