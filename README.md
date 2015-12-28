@@ -14,20 +14,20 @@ simple solution for simple problems, and it only needs a working Unix
 environment and a simple webserver with CGI capability.
 
 The data structure handled by this script is as follows.  A list
-of unique names, each with optional attributes, is the backbone of the
-entire structure, called the index or base.  Each of these index names
+of unique names, each with optional attributes (text fields), is the backbone of the
+entire structure, called the *index* or *base.*  Each of these index names
 may have exactly one entry in each of a number of pages, while all
-entries in a given page have the same additional fields.
+entries in a given page have the same structure of additional fields.
 
-In principle, the same functionality can be provided by one single big
-list with exactly one entry per index name, but it might be impractical
-to handle and process.
+(In principle, the same functionality can be provided by one single big
+list with exactly one entry per index name, but it would be rather impractical
+to handle and process.)
 
-An example of this structure may be an index or base of user names
-(or unique numbers), with attributes like full name, address, telephone
-numbers and e-mail address, and a collection of lists (pages) where each
-person has exactly one entry (or none at all). The lists could contain
-information like access rights to various equipment, subscription to
+An example of this structure may be an index of user names
+(or personnel numbers), with attributes like full name, address, telephone
+numbers and e-mail address, and a collection of lists (pages) with
+exactly one entry per person (or none at all) in each list. The lists might contain
+data like access rights to various equipment, subscription to
 mailing lists, number of hours worked for certain time period, etc.
 
 Another example would be an index of computers with attributes like
@@ -38,44 +38,41 @@ available periphery/accessories, or running costs.
 
 The script must be installed in a directory where CGI scripts can be executed.
 It must be called (e.g, by some HTML link) with at least the variable `db`
-set, like `http://example.com/somedir/webforms.cgi?db=test` (calling without
-any `db` value will generate a fatal error unless the default configuration
-file `defcfg.cfg` exists in the path of the script.)
+set, like `http://example.com/somedir/webforms.cgi?db=test` .
 
-To work properly, at least the configuration file (`test.cfg` in the example)
-and the pages referred in there must exist and be readable and writable for
+Calling it without any `db` value will generate a fatal error unless the default configuration
+file `defcfg.cfg` exists in the path of the script.
+Of course this could be modified in the script,
+if the database should be hardcoded.
+
+To work properly, at least the configuration file (`test.cfg` for the above example)
+and the pages referred by it must exist and be readable and writable for
 the script. A minimal installation therefore consists in the script itself,
-a configuration file, an index/base file, and one page file.
+a configuration file `*.cfg` , an index/base file, and one page file.
 
 ## Files
 
 ### Database structure
 
-There is one base or index file,
-containing one unique index number per line, with one or more descriptive
+There is one *base* or *index* file,
+containing one unique index number/name per line, with one or more descriptive
 fields.  This index is used as reference in additional files, which
 again contain a field for the index, and an arbitrary number of record
-fields. Each of these additional files can be rendered as HTML tables,
-with any or several of the index description fields and the corresponding
-record fields per line.
+fields. Each of these additional files are rendered as HTML tables by the script.
 
-All lines start with a flag character, which is one of the set `#+-*`
-or something else in future versions. All fields are separated by TAB
-which therefore is forbidden as content of any field.  Lines beginning
-with `#` (comments) or any unknown character are ignored.  Empty lines
-are ignored as well. The first line starting with `*` is the table header;
-any additional line starting with `*` is completely ignored.
+All lines start with a flag character, which is one of the set `#+-*` (possibly more in future versions).
+All fields are separated by `TAB` characters which therefore is forbidden as content of any field.
+Lines beginning with `#` (comments) or any unknown character are ignored. Empty lines are ignored as well.
+The first line starting with `*` is the table header; any additional line starting with `*` is completely ignored.
 
-Index fields must be unique, and this is enforced by the script:
-any duplicate entry may be deleted and only one retained.
+Index fields must be unique, and this is enforced by the script: any duplicate entry may be overwritten and only one retained.
 
 #### example base/index file
 
 	# names and email addresses
-	
+	# Jamie is no longer active ("deleted")
 	*	index	name	given	mail
 	+	1001	Deere	John	jode@example.com
-	# Jamie is no longer active ("deleted")
 	-	1002	Crown	Jamie	jacr@example.com
 	+	1003	Baker	Jack	jaba@example.com
 	+	1004	Able	Joan	joab@example.com
@@ -83,7 +80,6 @@ any duplicate entry may be deleted and only one retained.
 #### example record file
 
 	# entrance and leave database
-	
 	*	index	arrival date	departure date
 	+	1001	January 2013	present
 	-	1002	March 1987	June 2001
@@ -97,17 +93,16 @@ The latter can be changed in the page view, however.
 
 ### Configuration file
 
-Each collection of webforms is defined by a configuration file,
+Each collection of webforms is defined by a configuration file with suffix `.cfg` ,
 which is indicated to the CGI script by a GET variable and a
 hardcoded directory, or completely hardcoded for improved safety.
-Its name has the suffix `.cfg` (mandatory).
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
 files (indicated by `page`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers. (The page name is irrelevant
-for the index file, but it must be given.)
+for the index file, but it must be given for any file.)
 
 By setting the field `nopageindex` to something else than `false` or `0` ,
 displaying of the column for the index/base string can be suppressed.
@@ -195,12 +190,9 @@ including user and remote host information (beware of privacy issues!)
 
 ## Notes
 
-- The script attempts to lock all database files before writing anything,
-and fails if not successful after some retries.
-- Write permissions are only verified for `vw=saveindex` or `vw=saveentry`
-but not for the corresponding edit commands.
+- The script attempts to lock all database files before writing anything, and fails if not successful after some retries.
+- Write permissions are only verified for `vw=saveindex` or `vw=saveentry` but not for the corresponding edit commands.
 - For `vw=editindex` the script tries to generate a new and unique index
 number, if numerical index values are encountered.
 - Saving an entry for any existing index will overwrite the former content.
-- Entries cannot be deleted by the script; this has to be done manually
-in the database files.
+- Entries cannot be deleted by the script; this has to be done manually in the database files.
