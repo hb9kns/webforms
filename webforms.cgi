@@ -17,7 +17,7 @@ dobackup(){
 ## rcs version
  #ci -l -w$usr -m"$dmesg" "$1"
 ## poor man's version -- if commenting, do all lines of <<HERE document!
- cat <<EOH >>$1.diff
+ cat <<EOH >>"$1.diff"
 
 ## `date '+%y-%m-%d,%H:%M'` : $dmesg
 EOH
@@ -389,6 +389,10 @@ fi
 emptywarn=`getlines emptywarn <$cfg | head -n 1`
 emptywarn=${emptywarn:-' '}
 
+# define logfile
+logfile="`getlines logfile <$cfg | head -n 1`"
+logfile="${logfile:-/dev/null}"
+
 # define permitted characters for record fields
 fieldchars=`getlines fieldchars <$cfg | head -n 1`
 fieldchars=${fieldchars:-$defaultfieldchars}
@@ -424,6 +428,9 @@ vw=`inptvar vw '0-9A-Za-z'`
 
 # get view/command, and process info / render page
 vw=${vw:-default}
+cat <<EOH >>"$logfile"
+`date +%y-%m-%d,%H:%M` db=$db vw=$vw pg=$pg in=$in remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
+EOH
 case $vw in
 
  page)
@@ -637,7 +644,7 @@ EOH
 # replace flag for selected index
        grep "^[+-][ 	]$in" <"$pagef" | sed -e "s/.	/$flg	/" >>$tmpf
        cat $tmpf >"$pagef"
-       dobackup "$pagef" "saveindex for $in on page $pname"
+       dobackup "$pagef" "set index for $in on $pname"
       else cat <<EOH
 <li>FAILED for pagefile <tt>$pagef</tt> of page <tt>$pname</tt></li>
 EOH
@@ -771,7 +778,7 @@ EOH
 # save updated page file
    then
     cat $tmpf > "$pagef"
-    dobackup "$pagef" "saveentry for $in"
+    dobackup "$pagef" "saveentry for $in on $pg"
     cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a>
 (+ indicates shown entry, - hidden entry)</p>
