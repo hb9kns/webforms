@@ -13,7 +13,7 @@ which depend on the available clients. The script presented here is a
 simple solution for simple problems, and it only needs a working Unix
 environment and a simple webserver with CGI capability.
 
-The data structure handled by the present script is as follows.  A list
+The data structure handled by this script is as follows.  A list
 of unique names, each with optional attributes, is the backbone of the
 entire structure, called the index or base.  Each of these index names
 may have exactly one entry in each of a number of pages, while all
@@ -33,6 +33,19 @@ mailing lists, number of hours worked for certain time period, etc.
 Another example would be an index of computers with attributes like
 system responsibles and location or use, and lists with patch information,
 available periphery/accessories, or running costs.
+
+## Installation
+
+The script must be installed in a directory where CGI scripts can be executed.
+It must be called (e.g, by some HTML link) with at least the variable `db`
+set, like `http://example.com/somedir/webforms.cgi?db=test` (calling without
+any `db` value will generate a fatal error unless the default configuration
+file `defcfg.cfg` exists in the path of the script.)
+
+To work properly, at least the configuration file (`test.cfg` in the example)
+and the pages referred in there must exist and be readable and writable for
+the script. A minimal installation therefore consists in the script itself,
+a configuration file, an index/base file, and one page file.
 
 ## Files
 
@@ -90,16 +103,19 @@ hardcoded directory, or completely hardcoded for improved safety.
 Its name has the suffix `.cfg` (mandatory).
 
 This file contains the name of the base/index file (indicated by
-a leading `index` field), and the names of the (one or more) page
+a leading `base` field), and the names of the (one or more) page
 files (indicated by `page`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers. (The page name is irrelevant
-for the index file, but any must be given.)
+for the index file, but it must be given.)
 
 By setting the field `nopageindex` to something else than `false` or `0` ,
 displaying of the column for the index/base string can be suppressed.
 This column normally is shown as the first one in page views,
 but it may be of little use in case of numeric or random-like values.
+
+With the field `emptywarn` a string can be defined which will be displayed
+in place of empty fields. This can be any valid HTML code (see example).
 
 Permission levels for user names (passed via `REMOTE_USER` from the webserver)
 can be set with field names `admin/editor/visitor`.
@@ -108,17 +124,23 @@ on any of the permission lines are allowed to access the script.
 Otherwise, all users not listed as `admin` or `editor` are allowed
 only `visitor` access (i.e, read-only access to all pages).
 
+Logging can be switched on by setting the field `logfile.`
+
 #### example configuration file
 
 	# test suite configuration
 	# type	name	filename
-	index	dummy	relative/path/to/basefile.txt	basefile description
+	base	dummy	relative/path/to/basefile.txt	basefile description
 	page	pageone another/path/to/pageone.txt	page one description
 	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
 	# suppress displaying index/base field in page view
 	nopageindex	true
 	# reduce the maximum size of text fields in record input form
 	maxfieldlength	80
+	# logfile (no logging if undefined)
+	logfile	test.log
+	# how to warn about empty fields (can be undefined)
+	emptywarn	<font color="red">/EMPTY/</font>
 	# pattern of allowed characters in fields
 	# default: all ASCII characters from SPC to ~ (tilde)
 	# fieldchars	' -~'
@@ -131,7 +153,7 @@ only `visitor` access (i.e, read-only access to all pages).
 
 The script renders various pages, based on CGI environment variables:
 
-- `db` config file _(ignored if hardcoded)_
+- `db` config file
 - `pg` page name
 - `in` index number
 - `vw` view (display selection)
@@ -139,6 +161,9 @@ The script renders various pages, based on CGI environment variables:
 - `sd` sort direction
 - `fa` flag for active/hidden entry
 - `fN` field number N
+
+In some cases, additional variables are defined,
+e.g, for showing or hiding records or index/base entries.
 
 ### view/command variable `vw`
 
@@ -153,3 +178,29 @@ This variable value selects the view or command.
 - `vw=saveindex` save index entry
 - `vw=editentry` edit page entry/record
 - `vw=saveentry` save page entry/record
+
+---
+
+## Version control, logging
+
+By default, version control is done in a very simple way: For each database
+file, an old version with the suffix `.old` is saved, and the result from
+`diff -e $old $new` is appended to a file with the suffix `.diff` appended.
+(For this to work, the script of course must be able to write to these files.)
+
+If defined, the logfile contains information about all runs of the script,
+including user and remote host information (beware of privacy issues!)
+
+---
+
+## Notes
+
+- The script attempts to lock all database files before writing anything,
+and fails if not successful after some retries.
+- Write permissions are only verified for `vw=saveindex` or `vw=saveentry`
+but not for the corresponding edit commands.
+- For `vw=editindex` the script tries to generate a new and unique index
+number, if numerical index values are encountered.
+- Saving an entry for any existing index will overwrite the former content.
+- Entries cannot be deleted by the script; this has to be done manually
+in the database files.

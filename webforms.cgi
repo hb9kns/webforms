@@ -429,7 +429,7 @@ vw=`inptvar vw '0-9A-Za-z'`
 # get view/command, and process info / render page
 vw=${vw:-default}
 cat <<EOH >>"$logfile"
-`date +%y-%m-%d,%H:%M` db=$db vw=$vw pg=$pg in=$in remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
+`date +%y-%m-%d,%H:%M` db=$db vw=$vw pg=$pg in=$in usr=$usr/$perms remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
 EOH
 case $vw in
 
