@@ -444,6 +444,13 @@ case $vw in
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
+   cat <<EOH
+<p>select index name to modify entry, or
+<a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
+<p><a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hide</a> or
+<a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">show</a> hidden entries
+(currently $fa)</p>
+EOH
 # make header for user columns of page file
    tablehead "$pagef" $nopageindex
    getlines $i <"$pagef" | sort $sortopt -k $sc | { IFS="	" # TAB
@@ -469,14 +476,7 @@ EOH
      echo '</tr>'
     done
     }
-   cat <<EOH
-</table>
-<p>for modification, select index name, or
-<a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
-<p><a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hide</a> or
-<a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">show</a> hidden entries
-(currently $fa)</p>
-EOH
+   echo '</table>'
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
@@ -500,6 +500,11 @@ EOH
 
  listindex) 
   header "index" "List of Index/Base Values" "This is the list of all index/base values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
+  cat <<EOH
+<p>create
+ <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
+</p>
+EOH
 # make header for all columns of index file
   tablehead "$idx" 0
 # will be used by renderindices()
@@ -512,12 +517,7 @@ EOH
   echo '<tr><td>---</td></tr>'
   getlines '[-]' <"$idx" | sort $sortopt -k $sc | renderindices '<strike>' '</strike>'
   maxindex=`head -n 1 $tmpf`
-  cat <<EOH
-</table>
- <p>create
- <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
-</p>
-EOH
+  echo '</table>'
   footer ;; # listindex.
 
  descindex)
