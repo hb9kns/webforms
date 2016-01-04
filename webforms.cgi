@@ -192,7 +192,7 @@ pagefile(){
  getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
   read pfile _
 # sanitize
-  pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_-'`
+  pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_/-'`
 # generate probably nonexistent file name, if empty (to later raise errors)
   pfile=${pfile:-`uuidgen`}
 # don't change, if it starts with '/'
