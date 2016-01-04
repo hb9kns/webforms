@@ -8,9 +8,9 @@
 tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
-# (user name and REMOTE_HOST will be added to the remarks)
+# (user name and REMOTE_ADDR will be added to the remarks)
 dobackup(){
- dmesg="$2 (user=$usr, host=$REMOTE_HOST)"
+ dmesg="$2 (user=$usr, remote=$REMOTE_ADDR)"
 # comment/uncomment below as desired! commenting out all is also possible
 ## git version
  #git add "$1" && git commit -m "$dmesg"
