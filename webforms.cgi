@@ -236,7 +236,7 @@ tablehead(){
    then skip=`expr $skip - 1`
 # render column title with sort link
    else cat <<EOH
-<th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd">$field</a></th>
+<th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
 EOH
    fi
    nc=`expr $nc + 1`
@@ -437,8 +437,9 @@ case $vw in
   fa=`inptvar fa '0-9a-z'`
 # set pattern for hidden/active line filter
   case $fa in
-  shown|1) fa=shown ; i='[+-]' ;;
-  *) fa=hidden ; i='[+]' ;;
+  hidden) fa=hidden ; i='[-]' ;;
+  all) fa=all ; i='[+-]' ;;
+  *) fa=shown ; i='[+]' ;;
   esac
   header "$pg" "`pageinfo page $pg`" ""
   pagef="`pagefile page $pg`"
@@ -447,9 +448,6 @@ case $vw in
    cat <<EOH
 <p>select index name to modify entry, or
 <a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
-<p><a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hide</a> or
-<a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">show</a> hidden entries
-(currently $fa)</p>
 EOH
 # make header for user columns of page file
    tablehead "$pagef" $nopageindex
@@ -477,6 +475,12 @@ EOH
     done
     }
    echo '</table>'
+   cat <<EOH
+<p><i>display <a href="$myself?db=$db&pg=$pg&vw=page&fa=all">all</a> or only
+<a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">shown</a> or only
+<a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hidden</a> entries
+(currently $fa)</i></p>
+EOH
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
