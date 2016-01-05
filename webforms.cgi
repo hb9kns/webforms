@@ -312,7 +312,7 @@ renderindices(){
  local pastind i ofs
  ofs="$IFS"
  IFS="	" # TAB
- i=1
+ i=${maxindex:-1}
  while read in desc
 # use index for link to edit view, marked with tags
  do cat <<EOH
@@ -520,15 +520,10 @@ EOH
 
  listindex) 
   header "index" "List of Index/Base Values" "This is the list of all index/base values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
-  cat <<EOH
-<p>create
- <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
-</p>
-EOH
 # make header for all columns of index file
   tablehead "$idx" 0
 # will be used by renderindices()
-  maxindex=0
+  maxindex=1
 # active ones
   getlines '[+]' <"$idx" | fieldsort | renderindices '<b>' '</b>'
 # get counter value reported via tmpf
@@ -537,7 +532,14 @@ EOH
   echo '<tr><td>---</td></tr>'
   getlines '[-]' <"$idx" | fieldsort | renderindices '<strike>' '</strike>'
   maxindex=`head -n 1 $tmpf`
-  echo '</table>'
+  maxindex=${maxindex:-0}
+  maxindex=`expr $maxindex + 1`
+  cat <<EOH
+</table>
+<p><i>total $maxindex entries</i> / create
+ <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
+</p>
+EOH
   footer ;; # listindex.
 
  descindex)
