@@ -363,12 +363,13 @@ permadmin=100
 permeditor=10
 permvisitor=1
 # establish permissions (the higher, the better)
+# admin and editor can have '*' entries, granting permissions to *any user*
 perms=0
 usr=${REMOTE_USER:-nobody}
-if checkline admin $usr <$cfg
+if checkline admin $usr <$cfg || checkline admin '\*' <$cfg
 then perms=$permadmin
 else
- if checkline editor $usr <$cfg
+ if checkline editor $usr <$cfg || checkline editor '\*' <$cfg
  then perms=$permeditor
  else
 # if "visitor" entries exist, user must be explicitly allowed
