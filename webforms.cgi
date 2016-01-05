@@ -21,8 +21,8 @@ dobackup(){
 
 ## `date '+%y-%m-%d,%H:%M'` : $dmesg
 EOH
-# ed-like diff (shortest, and can be more easily replayed)
- diff -e "$1.old" "$1" >>"$1.diff"
+# ed-like inverse (new to old) diff: short, and can be more easily replayed
+ diff -e "$1" "$1.old" >>"$1.diff"
  cat "$1" > "$1.old"
 # make sure backup files cannot be read by all
  chmod o-rwx "$1.old" "$1.diff"
@@ -299,6 +299,12 @@ EOH
  fi
 }
 
+# sort according to field defined by $sc and $sd
+# with escaping of TAB and '|'
+fieldsort(){
+ sed -e 's/|/|||/g;s/ /|~|/g' | sort $sortopt | sed -e 's/|~|/ /g;s/|||/|/g'
+}
+
 # function for displaying index entries
 # maxindex must be initialised globally, as well as CGI variables db, pg, in
 # arg.1,2 = additional tags for each index entry
@@ -423,8 +429,8 @@ case $sd in
  1) sortopt='-r' ;;
  *) sd=0 ; sortopt='' ;;
 esac
-# also ignore lower/uppercase
-sortopt="$sortopt -f"
+# add field position, and ignore case, blank, and nonprintable
+sortopt="$sortopt -k $sc -f -b -i"
 
 # get and sanitize values
 in=`inptvar in '0-9a-zA-Z-'`
@@ -458,10 +464,13 @@ case $vw in
 EOH
 # make header for user columns of page file
    tablehead "$pagef" $nopageindex
-   getlines $i <"$pagef" | sort $sortopt -k $sc | { IFS="	" # TAB
+# get lines with appropriate flag, and sort according to table head
+   getlines $i <"$pagef" | fieldsort |{ IFS="	" # TAB
+    count=0
     while read in f1 desc
 # create link to edit view
     do
+     count=`expr $count + 1`
      if test $nopageindex = 1
 # use first field as link text
      then cat <<EOH
@@ -480,14 +489,14 @@ EOH
       sed -e "s:<td> *</td>:<td>$emptywarn</td>:g"
      echo '</tr>'
     done
-    }
-   echo '</table>'
-   cat <<EOH
+    echo '</table>'
+    cat <<EOH
 <p><i>display <a href="$myself?db=$db&pg=$pg&vw=page&fa=all">all</a> or only
 <a href="$myself?db=$db&pg=$pg&vw=page&fa=shown">shown</a> or only
-<a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hidden</a> entries
-(currently $fa)</i></p>
+<a href="$myself?db=$db&pg=$pg&vw=page&fa=hidden">hidden</a> entries,
+currently $fa $count</i></p>
 EOH
+    }
   else cat <<EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
@@ -521,12 +530,12 @@ EOH
 # will be used by renderindices()
   maxindex=0
 # active ones
-  getlines '[+]' <"$idx" | sort $sortopt -k $sc | renderindices '<b>' '</b>'
+  getlines '[+]' <"$idx" | fieldsort | renderindices '<b>' '</b>'
 # get counter value reported via tmpf
   maxindex=`head -n 1 $tmpf`
 # hidden ones
   echo '<tr><td>---</td></tr>'
-  getlines '[-]' <"$idx" | sort $sortopt -k $sc | renderindices '<strike>' '</strike>'
+  getlines '[-]' <"$idx" | fieldsort | renderindices '<strike>' '</strike>'
   maxindex=`head -n 1 $tmpf`
   echo '</table>'
   footer ;; # listindex.
