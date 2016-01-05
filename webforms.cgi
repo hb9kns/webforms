@@ -32,6 +32,9 @@ EOH
 # as 'tr' pattern
 defaultfieldchars=' -~'
 
+# help file for linking (may also be nonexistent and will then be ignored)
+helpfile="./help.html"
+
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
 
 pjthome=http://gitlab.com/yargo/webforms
@@ -144,9 +147,13 @@ Content-type: text/html
 <body>
 <p align="right">
 <tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perms)</tt>
-</p>
-<p>
 EOH
+if test -r "$helpfile"
+then cat <<EOH
+:: <a href="$helpfile">Help</a>
+EOH
+fi
+echo '</p><p>'
 if test "$pg" != ""
 then cat <<EOH
 :: <a href="$myself?db=$db&pg=$pg&vw=page">&laquo;<tt>$pg</tt>&raquo;</a>
