@@ -105,16 +105,17 @@ The latter can be changed in the page view, however.
 
 ### Configuration file
 
-Each collection of webforms is defined by a configuration file with suffix `.cfg` ,
-which is indicated to the CGI script by a GET variable and a
-hardcoded directory, or completely hardcoded for improved safety.
+Each collection of webforms is defined by a configuration file with
+suffix `.cfg` , which is indicated to the CGI script by a GET
+variable and a hardcoded directory, or completely hardcoded for
+improved safety.
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
 files (indicated by `page`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
-included in the rendered page headers. (The page name is irrelevant
-for the index file, but it must be given for any file.)
+included in the rendered page headers.
+The page name for the index file must be set to `file` for correct syntax.
 
 By setting the field `nopageindex` to something else than `false` or `0` ,
 displaying of the column for the index/base string can be suppressed.
@@ -136,13 +137,15 @@ the corresponding permissions. The highest level available will be applied.
 E.g, an entry of `admin	*` will grant admin permissions to all users,
 even if they are listed in `editor` or `visitor` lines.
 
-Logging can be switched on by setting the field `log` with a dummy page name.
+Logging can be switched on by setting the field `log` with page name 'log'
+and the file name. If the file is not writable, no logging will occur without
+error.
 
 #### example configuration file
 
 	# test suite configuration
 	# type	name	filename
-	base	dummy	relative/path/to/basefile.txt	basefile description
+	base	file	relative/path/to/basefile.txt	basefile description
 	page	pageone another/path/to/pageone.txt	page one description
 	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
 	# suppress displaying index/base field in page view
@@ -150,7 +153,7 @@ Logging can be switched on by setting the field `log` with a dummy page name.
 	# reduce the maximum size of text fields in record input form
 	maxfieldlength	80
 	# logfile (no logging if unwritable!)
-	log	dummy	test.log
+	log	file	test.log
 	# how to warn about empty fields (can be undefined)
 	emptywarn	<font color="red">/EMPTY/</font>
 	# pattern of allowed characters in fields,

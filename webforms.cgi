@@ -356,8 +356,8 @@ then fatal "configuration file $cfg not readable"
  exit 9
 fi
 
-# define index/base file name, '.*' is wildcard for index name
-idx="`pagefile base '.*' <$cfg`"
+# define index/base file name
+idx="`pagefile base file <$cfg`"
 if test ! -r "$idx"
 then fatal "index/base file $idx not readable"
  exit 9
@@ -407,8 +407,8 @@ fi
 emptywarn=`getlines emptywarn <$cfg | head -n 1`
 emptywarn=${emptywarn:-' '}
 
-# define logfile, pagename is wildcard (dummy)
-logfile="`pagefile log '.*' <$cfg | head -n 1`"
+# define logfile
+logfile="`pagefile log file <$cfg | head -n 1`"
 # if unwritable, simply ignore
 if test ! -w "$logfile"
 then logfile=/dev/null
