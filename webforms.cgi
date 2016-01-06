@@ -118,10 +118,13 @@ inptvar(){
 }
 
 # get lines beginning with a value, and remove that column
+# note TAB in sed and grep pattern: make sure there is a TAB,
+#  and that the value is complete
 getlines(){
- grep "^$1" | { IFS="	" # record separator TAB only
+ sed -e 's/$/	/' | grep "^$1[	]" | { IFS="	" # record separator TAB only
  while read _ values
- do echo "$values"
+# again remove added TAB
+ do echo "${values%	}"
  done
  }
 }
@@ -352,8 +355,8 @@ then fatal "configuration file $cfg not readable"
  exit 9
 fi
 
-# define index/base file name, '.' is wildcard for index name
-idx="`pagefile base . <$cfg`"
+# define index/base file name, '.*' is wildcard for index name
+idx="`pagefile base '.*' <$cfg`"
 if test ! -r "$idx"
 then fatal "index/base file $idx not readable"
  exit 9
@@ -403,9 +406,12 @@ fi
 emptywarn=`getlines emptywarn <$cfg | head -n 1`
 emptywarn=${emptywarn:-' '}
 
-# define logfile
-logfile="`getlines logfile <$cfg | head -n 1`"
-logfile="${logfile:-/dev/null}"
+# define logfile, pagename is wildcard (dummy)
+logfile="`pagefile log '.*' <$cfg | head -n 1`"
+# if unwritable, simply ignore
+if test ! -w "$logfile"
+then logfile=/dev/null
+fi
 
 # define permitted characters for record fields
 fieldchars=`getlines fieldchars <$cfg | head -n 1`
@@ -443,7 +449,7 @@ vw=`inptvar vw '0-9A-Za-z'`
 # get view/command, and process info / render page
 vw=${vw:-default}
 cat <<EOH >>"$logfile"
-`date +%y-%m-%d,%H:%M` db=$db vw=$vw pg=$pg in=$in usr=$usr/$perms remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
+`date +%y-%m-%d,%H:%M:%S` db=$db vw=$vw pg=$pg in=$in usr=$usr/$perms remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
 EOH
 case $vw in
 
@@ -556,7 +562,6 @@ EOH
  editindex)
   header "edit index" "Edit index/base fields" "Edit fields and SAVE.<br />Notes: first field (index) must be unique, will overwrite old entry if already present! To suppress listing of this index on record page, deselect SHOW."
   permwarn $permadmin
-# get selected index (but only the first one)
   cat <<EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
@@ -567,6 +572,7 @@ EOH
  <tr>
   <td><input type="text" name="in" value="$in" /></td>
 EOH
+# get selected index (but only the first one)
   getlines '[+-]' <"$idx" | getlines $in | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | { fn=1 # index field already counts as 1
    while read field
@@ -609,8 +615,10 @@ EOH
   else
    tablehead "$idx" 0
    totalcols=$?
-# copy everything not containing selected index (SPC&TAB in patterns)
-   grep -v "^[+-][ 	]$in" <"$idx" >$tmpf
+# copy everything not containing selected index (TAB in patterns),
+# with additional trailing TAB for grepping removed afterwards
+   sed -e 's/$/	/' <"$idx" | grep -v "^[+-][	]$in[	]" |
+    sed -e 's/	$//' >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
    then newline="+	$in"
