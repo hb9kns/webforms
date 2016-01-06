@@ -136,7 +136,7 @@ the corresponding permissions. The highest level available will be applied.
 E.g, an entry of `admin	*` will grant admin permissions to all users,
 even if they are listed in `editor` or `visitor` lines.
 
-Logging can be switched on by setting the field `logfile.`
+Logging can be switched on by setting the field `log` with a dummy page name.
 
 #### example configuration file
 
@@ -149,8 +149,8 @@ Logging can be switched on by setting the field `logfile.`
 	nopageindex	true
 	# reduce the maximum size of text fields in record input form
 	maxfieldlength	80
-	# logfile (no logging if undefined)
-	logfile	test.log
+	# logfile (no logging if unwritable!)
+	log	dummy	test.log
 	# how to warn about empty fields (can be undefined)
 	emptywarn	<font color="red">/EMPTY/</font>
 	# pattern of allowed characters in fields,
@@ -197,16 +197,15 @@ By default, version control is done in a very simple way: For each database
 file, an old version with the suffix `.old` is saved, and the result from
 `diff -e $new $old` is appended to a file with the suffix `.diff` .
 (For this to work, the script of course must be able to write to these files.)
-In principle, from this any old version can be reconstructed, but the is currently
-no automatic way provided.
+In principle, from this any old version can be reconstructed, but currently
+there is no automatic way provided.
 
 Version control can also be done with RCS or Git.
 However, for this to work, the function `dobackup`
 must be modified; please read the source!
 
 If defined, the logfile contains information about all runs of the script,
-including user and remote host information.
-Be careful about privacy issues!
+including user and remote host information -- be careful about privacy issues!
 
 ---
 
