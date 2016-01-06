@@ -81,7 +81,6 @@ cat $tmpf | tr '+;&' '
 # end script after cleanup with exit code as arg.1
 finish(){
 /bin/rm -f ${tmpr}*
-sleep 1 # to reduce possible load
 # exit code arg.1, or 0 if missing
 exit ${1:-0}
 }
@@ -262,13 +261,15 @@ tablefoot(){ echo '</table>' ; }
 
 # attempt to get a lockfile (arg.1)
 lockfile(){
- local lf lc
+ local lf lc lt
  lc=9 # timeout counter
+# delay, somewhat random per instance
+ lt=`expr $$ % 3 + 1`
  lf="$1.lock"
 # while file already present, and not yet timeout
  while test -f "$lf" -a $lc -gt 0
  do lc=`expr $lc - 1`
-  sleep 2
+  sleep $lt
  done
  if test -f "$lf"
 # if file still exists, fail with empty reply
