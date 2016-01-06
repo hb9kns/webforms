@@ -179,7 +179,11 @@ EOH
 footer(){
 cat <<EOH
 <hr />
-<p><small><i>processed by <a href="$pjthome">$myself</a></i></small></p>
+<p><small><i>
+processed by <a href="$pjthome">$myself</a>
+ on <tt>`hostname`</tt>
+ (`w|head -n 1`)
+</i></small></p>
 <pre>
 EOH
 # cat $inpt # for debugging
