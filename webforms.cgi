@@ -684,7 +684,7 @@ EOH
 # copy everything not containing selected index
        grepothers $in <"$pagef" >$tmpf
 # replace flag for selected index, with limiting TAB added/removed
-       sed -e 's/$/	/' <"$pagef" | grep "^[+-][ 	]$in" |
+       sed -e 's/$/	/' <"$pagef" | grep "^[+-][ 	]$in	" |
         sed -e "s/.	/$flg	/;s/	$//" >>$tmpf
        cat $tmpf >"$pagef"
        dobackup "$pagef" "set index for $in on $pname"
