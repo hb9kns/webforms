@@ -820,6 +820,10 @@ EOH
    if test $perms -ge $permeditor
 # save updated page file
    then
+    cat <<EOH
+<p><i>comparison between former (&lt;) and updated (&gt;) database:</i></p>
+<pre>`diff "$pagef" $tmpf | grep '^[<>]'`</pre>
+EOH
     cat $tmpf > "$pagef"
     dobackup "$pagef" "saveentry for $in on $pg"
     cat <<EOH
