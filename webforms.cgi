@@ -138,7 +138,7 @@ getlines "$1" | sed -e 's/^/	/;s/$/	/' |
  grep "	$entry	" 2>&1 >/dev/null
 }
 
-# display header, arg.1 = page title, arg.2 = main title, arg.3 = description
+# display header, arg.1 = page title, arg.2 = main title, arg.3.. = description
 header(){
 cat <<EOH
 Content-type: text/html
@@ -169,6 +169,8 @@ cat <<EOH
 <hr />
 <h1>$2</h1>
 EOH
+# uncomment during maintenance
+# echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
 shift
 shift
 cat <<EOH
@@ -312,6 +314,11 @@ EOH
 # with escaping of TAB and '|'
 fieldsort(){
  sed -e 's/|/|||/g;s/ /|~|/g' | sort $sortopt | sed -e 's/|~|/ /g;s/|||/|/g'
+}
+
+# grep for other indices, with additional trailing TAB, removed afterwards
+grepothers(){
+ sed -e 's/$/	/' | grep -v "^[+-][	]$1[	]" | sed -e 's/	$//'
 }
 
 # function for displaying index entries
@@ -621,10 +628,8 @@ EOH
   else
    tablehead "$idx" 0
    totalcols=$?
-# copy everything not containing selected index (TAB in patterns),
-# with additional trailing TAB for grepping removed afterwards
-   sed -e 's/$/	/' <"$idx" | grep -v "^[+-][	]$in[	]" |
-    sed -e 's/	$//' >$tmpf
+# copy everything not containing selected index
+   grepothers $in <"$idx" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
    then newline="+	$in"
@@ -676,10 +681,11 @@ EOH
       then cat <<EOH
 <li><tt>$pname</tt></li>
 EOH
-# copy everything not containing selected index (SPC&TAB in patterns)
-       grep -v "^[+-][ 	]$in" <"$pagef" >$tmpf
-# replace flag for selected index
-       grep "^[+-][ 	]$in" <"$pagef" | sed -e "s/.	/$flg	/" >>$tmpf
+# copy everything not containing selected index
+       grepothers $in <"$pagef" >$tmpf
+# replace flag for selected index, with limiting TAB added/removed
+       sed -e 's/$/	/' <"$pagef" | grep "^[+-][ 	]$in" |
+        sed -e "s/.	/$flg	/;s/	$//" >>$tmpf
        cat $tmpf >"$pagef"
        dobackup "$pagef" "set index for $in on $pname"
       else cat <<EOH
@@ -774,7 +780,7 @@ EOH
   footer ;; # editentry.
 
  saveentry)
-  header "saveentry" "Saving page entry" "Attempting to save entry for $in on page $pg ..."
+  header 'save entry' "Saving page entry" "Attempting to save entry for $in on page $pg ..."
   pagef="`pagefile page $pg`"
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
@@ -788,8 +794,8 @@ EOH
   else
   tablehead "$pagef" 0
   totalcols=$?
-# copy everything not containing selected index (SPC&TAB in patterns)
-   grep -v "^[+-][ 	]$in" <"$pagef" >$tmpf
+# copy everything not containing selected index
+   grepothers $in <"$pagef" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
    then newline="+	$in"
