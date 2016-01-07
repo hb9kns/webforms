@@ -133,8 +133,9 @@ checkline(){
 local entry found
 entry="$2"
 found=0
-# read lines, surround with TAB (in sed pattern), and check if somewhere
-getlines "$1" | sed -e 's/^/	/;s/$/	/' | grep "$entry" 2>&1 >/dev/null
+# read lines, surround with TAB (also in sed pattern), and check if somewhere
+getlines "$1" | sed -e 's/^/	/;s/$/	/' |
+ grep "	$entry	" 2>&1 >/dev/null
 }
 
 # display header, arg.1 = page title, arg.2 = main title, arg.3 = description
