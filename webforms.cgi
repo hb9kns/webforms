@@ -556,7 +556,7 @@ EOH
   maxindex=`expr $maxindex + 1`
   cat <<EOH
 </table>
-<p><i>total $maxindex entries</i> / create
+<p>create
  <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
 </p>
 EOH
