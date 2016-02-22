@@ -9,75 +9,87 @@ server-side only
 
 Web-based database applications often need complicated installation
 of libraries or programs, or rely on Javascript and other techniques
-which depend on the available clients. The script presented here is a
-simple solution for simple problems, and it only needs a working Unix
-environment and a simple webserver with CGI capability.
+which depend on the available clients. The script presented here
+is a simple solution for simple problems, and it only needs a
+working Unix environment and a simple webserver with CGI capability.
 
 The data structure handled by this script is as follows.  A list
-of unique names, each with optional attributes (text fields), is the backbone of the
-entire structure, called the *index* or *base.*  Each of these index names
-may have exactly one entry in each of a number of pages, while all
-entries in a given page have the same structure of additional fields.
+of unique names, each with optional attributes (text fields), is
+the backbone of the entire structure, called the *index* or *base.*
+Each of these index names may have exactly one entry in each of a
+number of pages, while all entries in a given page have the same
+structure of additional fields.
 
-(In principle, the same functionality can be provided by one single big
-list with exactly one entry per index name, but it would be rather impractical
-to handle and process.)
+(In principle, the same functionality can be provided by one single
+big list with exactly one entry per index name, but it would be
+rather impractical to handle and process.)
 
-An example of this structure may be an index of user names
-(or personnel numbers), with attributes like full name, address, telephone
-numbers and e-mail address, and a collection of lists (pages) with
-exactly one entry per person (or none at all) in each list. The lists might contain
-data like access rights to various equipment, subscription data to
-mailing lists, number of hours worked, etc.
+An example of this structure may be an index of user names (or
+personnel numbers), with attributes like full name, address,
+telephone numbers and e-mail address, and a collection of lists
+(pages) with exactly one entry per person (or none at all) in each
+list. The lists might contain data like access rights to various
+equipment, subscription data to mailing lists, number of hours
+worked, etc.
 
 Another example would be an index of computers with attributes like
-system responsibles and location or use, and lists with patch information,
-available periphery/accessories, or running costs.
+system responsibles and location or use, and lists with patch
+information, available periphery/accessories, or running costs.
 
 ## Installation
 
-The script must be installed in a directory where CGI scripts can be executed.
-It must be called (e.g, by some HTML link) with at least the variable `db`
-set, like `http://example.com/somedir/webforms.cgi?db=test` .
+The script must be installed in a directory where CGI scripts can
+be executed.  It must be called (e.g, by some HTML link) with at
+least the variable `db` set, like
+`http://example.com/somedir/webforms.cgi?db=test` .
 
-Calling it without any `db` value will generate a fatal error unless the default configuration
-file `defcfg.cfg` exists in the path of the script.
-Of course this can be modified in the script, if the database should be hardcoded.
+Calling it without any `db` value will generate a fatal error unless
+the default configuration file `defcfg.cfg` exists in the path of
+the script.  Of course this can be modified in the script, if the
+database should be hardcoded.
 
-To work properly, at least the configuration file (`test.cfg` for the above example)
-and the pages referred by it must exist and be readable and writable for
-the script. A minimal installation therefore consists in the script itself,
-a configuration file `*.cfg` , an index/base file, and one page file.
+To work properly, at least the configuration file (`test.cfg` for
+the above example) and the pages referred by it must exist and be
+readable and writable for the script. A minimal installation
+therefore consists in the script itself, a configuration file
+`*.cfg` , an index/base file, and one page file.
 
 ## Files
 
 ### Database structure
 
-There is one *base* or *index* file,
-containing one unique index number/name per line, with one or more descriptive
-fields.  This index is used as reference in additional files, which
-again contain a field for the index, and an arbitrary number of record
-fields. Each of these additional files are rendered as HTML tables by the script.
+There is one *base* or *index* file, containing one unique index
+number/name per line, with one or more descriptive fields.  This
+index is used as reference in additional files, which again contain
+a field for the index, and an arbitrary number of record fields.
+Each of these additional files are rendered as HTML tables by the
+script.
 
-All lines start with a flag character, which is one of the set `#+-*` (possibly more in future versions).
-All fields are separated by `TAB` characters which therefore is forbidden as content of any field.
-Lines beginning with `#` (comments) or any unknown character are ignored. Empty lines are ignored as well.
-The first line starting with `*` is the table header; any additional line starting with `*` is completely ignored.
+All lines start with a flag character, which is one of the set
+`#+-*` (possibly more in future versions).  All fields are separated
+by `TAB` characters which therefore is forbidden as content of any
+field.  Lines beginning with `#` (comments) or any unknown character
+are ignored. Empty lines are ignored as well.  The first line
+starting with `*` is the table header; any additional line starting
+with `*` is completely ignored.
 
-Index fields must be unique, and this is enforced by the script: any duplicate entry may be overwritten and only one retained.
+Index fields must be unique, and this is enforced by the script:
+any duplicate entry may be overwritten and only one retained.
 
-Normally, entry lines start with the `+` flag character. This renders them as available.
+Normally, entry lines start with the `+` flag character. This
+renders them as available.
 
-Index entries with leading `-` are not available for edition or creation of page entries,
-i.e, any entry with such an index name cannot be modified.
-When an index entry is to be saved, the show/hide operation can also be applied to all
-pages, i.e the corresponding page records are simultaneously shown/hidden.
+Index entries with leading `-` are not available for edition or
+creation of page entries, i.e, any entry with such an index name
+cannot be modified.  When an index entry is to be saved, the
+show/hide operation can also be applied to all pages, i.e the
+corresponding page records are simultaneously shown/hidden.
 
-Page entries with leading `-` normally are not displayed when the page is rendered,
-but they can be un-hidden, and also be edited.
+Page entries with leading `-` normally are not displayed when the
+page is rendered, but they can be un-hidden, and also be edited.
 
-Please note that any entry (index or page data) may be overwritten without warning,
-if the user has appropriate permissions.
+Please note that any entry (index or page data) may be overwritten
+without warning, if the user has appropriate permissions.
 
 #### example base/index file
 
