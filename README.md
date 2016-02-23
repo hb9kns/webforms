@@ -1,5 +1,7 @@
 # webforms
 
+**This is the `dev` branch currently checked out!**
+
 CGI script for dynamic web forms using flat file databases,
 server-side only
 
@@ -171,6 +173,10 @@ error.
 	# pattern of allowed characters in fields,
 	# default = all ASCII characters from SPC to ~ (tilde)
 	#fieldchars	' -~'
+	# additional index field names to be shown in pageviews:
+	# skip fields with a single dash '-', never use '|' in these names!
+	# (in this example: only 'given' but not 'name' or 'mail')
+	#showindex	-	given name
 	# type	names
 	admin	chief	johnny	sue
 	editor	pam	james

@@ -205,7 +205,7 @@ EOH
 # get file name for arg.1=type, arg.2=page
 pagefile(){
 # get file name
- getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
+ getlines $1 <"$cfg" | getlines $2 | { IFS="	" # TAB
   read pfile _
 # sanitize
   pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_/-'`
@@ -222,24 +222,30 @@ pagefile(){
 
 # get page info for arg.1=type, arg.2=page
 pageinfo(){
- getlines $1 <$cfg | getlines $2 | { IFS="	" # TAB
+ getlines $1 <"$cfg" | getlines $2 | { IFS="	" # TAB
   read _ pinfo
   echo "$pinfo"
  }
 }
 
-# print HTML table head for arg.1=file, arg.2=start column
+# print HTML table head for arg.1=file, arg.2=start column,
+#  if arg.3=showindex then also field names from config var 'showindex'
 # exit code = number of rendered columns
 tablehead(){
- local skip nc nd
+ local skip nc nd idxf
  skip=${2:-0}
  sc=${sc:-1}
  sd=${sd:-0}
  nc=1
+ if test "$3" = "showindex"
+# remove skipped fields consisting only of '-'
+ then idxf=`echo "$showindex" | sed -e 's/-	//g'`
+ else idxf=''
+ fi
  echo '<table><tr>'
-# get first line beginning with '*' ('[*]' for grep pattern)
-# (note TAB in sed pattern)
- getlines '[*]' <$1 | head -n 1 | sed -e 's/	/\
+# get first line beginning with '*' ('[*]' for grep pattern),
+# and inject $idx after index (note <TAB>s in sed patterns)
+ getlines '[*]' <"$1" | head -n 1 | sed -e "s|	|	$idxf|" -e 's/	/\
 /g' | { while read field
   do
 # for column selected for sorting, invert next sort order
@@ -369,7 +375,7 @@ then fatal "configuration file $cfg not readable"
 fi
 
 # define index/base file name
-idx="`pagefile base file <$cfg`"
+idx=`pagefile base file <"$cfg"`
 if test ! -r "$idx"
 then fatal "index/base file $idx not readable"
  exit 9
@@ -382,16 +388,16 @@ permvisitor=1
 # admin and editor can have '*' entries, granting permissions to *any user*
 perms=0
 usr=${REMOTE_USER:-nobody}
-if checkline admin $usr <$cfg || checkline admin '\*' <$cfg
+if checkline admin $usr <"$cfg" || checkline admin '\*' <"$cfg"
 then perms=$permadmin
 else
- if checkline editor $usr <$cfg || checkline editor '\*' <$cfg
+ if checkline editor $usr <"$cfg" || checkline editor '\*' <"$cfg"
  then perms=$permeditor
  else
 # if "visitor" entries exist, user must be explicitly allowed
-  if grep "^visitor" $cfg 2>&1 >/dev/null
+  if grep "^visitor" "$cfg" 2>&1 >/dev/null
   then
-   if checkline visitor $usr <$cfg
+   if checkline visitor $usr <"$cfg"
    then perms=$permvisitor
    else perms=0
    fi
@@ -404,31 +410,34 @@ fi # admin
 # define link field for page view
 nopageindex=0
 # set to first record field, if nopageindex present with any value
-if checkline nopageindex '.*' <$cfg
+if checkline nopageindex '.*' <"$cfg"
 then nopageindex=1
 fi
 # reset to index field, if false or 0
-if checkline nopageindex false <$cfg
+if checkline nopageindex false <"$cfg"
 then nopageindex=0
 fi
-if checkline nopageindex 0 <$cfg
+if checkline nopageindex 0 <"$cfg"
 then nopageindex=0
 fi
 
 # define warning for empty fields
-emptywarn=`getlines emptywarn <$cfg | head -n 1`
+emptywarn=`getlines emptywarn <"$cfg" | head -n 1`
 emptywarn=${emptywarn:-' '}
 
 # define logfile
-logfile="`pagefile log file <$cfg | head -n 1`"
+logfile="`pagefile log file <"$cfg" | head -n 1`"
 # if unwritable, simply ignore
 if test ! -w "$logfile"
 then logfile=/dev/null
 fi
 
 # define permitted characters for record fields
-fieldchars=`getlines fieldchars <$cfg | head -n 1`
+fieldchars=`getlines fieldchars <"$cfg" | head -n 1`
 fieldchars=${fieldchars:-$defaultfieldchars}
+# get additional index fields to be shown in page view
+# get arguments after "showindex" config var, only first line,
+showindex=`getlines showindex <"$cfg" | head -n 1`
 
 # at least permission 1 is necessary for running script at all
 if test $perms -lt 1
@@ -486,6 +495,7 @@ EOH
    tablehead "$pagef" $nopageindex
 # get lines with appropriate flag, and sort according to table head
    getlines $i <"$pagef" | fieldsort |{ IFS="	" # TAB
+##### :::::::: TODO: ADD INJECTION OF ADDITIONAL INDEX FIELDS ::::::::
     count=0
     while read in f1 desc
 # create link to edit view
@@ -498,15 +508,15 @@ EOH
 <td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 EOH
 # use index field, and also show first field (possibly with warning)
-     else sed -e "s:<td> *</td>:<td>$emptywarn</td>:g" <<EOH
+     else sed -e "s|<td> *</td>|<td>$emptywarn</td>|g" <<EOH
 <tr>
 <td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
 <td>$f1</td>
 EOH
      fi
 # split remaining description into table fields, add warnings
-     echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g' |
-      sed -e "s:<td> *</td>:<td>$emptywarn</td>:g"
+     echo "<td>$desc</td>" | sed -e 's|	|</td><td>|g' |
+      sed -e "s|<td> *</td>|<td>$emptywarn</td>|g"
      echo '</tr>'
     done
     echo '</table>'
@@ -526,7 +536,7 @@ EOH
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines page <$cfg | { IFS="	" # TAB
+  getlines page <"$cfg" | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
@@ -673,7 +683,7 @@ EOH
      fi
      echo 'to all related page entries:</p><ul>'
 # get all pages for the current database
-     getlines page <$cfg | { while read pname _
+     getlines page <"$cfg" | { while read pname _
      do
       pagef="`pagefile page $pname`"
       plock="`lockfile \"$pagef\"`"
@@ -685,7 +695,7 @@ EOH
        grepothers $in <"$pagef" >$tmpf
 # replace flag for selected index, with limiting TAB added/removed
        sed -e 's/$/	/' <"$pagef" | grep "^[+-][ 	]$in	" |
-        sed -e "s/.	/$flg	/;s/	$//" >>$tmpf
+        sed -e "s|.	|$flg	|;s|	$||" >>$tmpf
        cat $tmpf >"$pagef"
        dobackup "$pagef" "set index for $in on $pname"
       else cat <<EOH
@@ -708,7 +718,7 @@ EOH
  editentry)
   header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, uncheck SHOW to hide entry"
   permwarn $permeditor
-  maxflength=`getlines maxlength <$cfg | head -n 1`
+  maxflength=`getlines maxlength <"$cfg" | head -n 1`
   maxflength=${maxflength:-199}
   pagef="`pagefile page $pg`"
   if test -r "$pagef"
