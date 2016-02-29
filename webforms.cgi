@@ -60,6 +60,8 @@ mydir=`dirname "$0"`
 # temp files for input
 tmpf=$tmpr.tmp
 inpt=$tmpr.inp
+# and showindex filtered index
+tmpi=$tmpf.idx
 
 cat >$tmpf
 echo "$QUERY_STRING" >>$tmpf
@@ -357,6 +359,39 @@ EOH
  IFS="$ofs"
 }
 
+# functions for sed pattern generation for showindex handling
+# (TABs in IFS and [^..])
+
+# search pattern: subpatterns for non-skip fields
+showindexsrch(){
+ local out
+ IFS="	"
+ out=''
+ while test "$1" != ""
+ do case $1 in
+  -) out="$out	[^	][^	]*" ;;
+  *) out="$out	\\([^	][^	]*\\)" ;;
+  esac
+ done
+ echo "$out"
+}
+
+# replace pattern: delete skip fields, replace non-skips with references
+showindexrepl(){
+ local out cnt
+ IFS="	"
+ out=''
+ cnt=1
+ while test "$1" != ""
+ do case $1 in
+  -) : ;; # NO-OP
+  *) out="$out	\\$cnt" ;;
+  esac
+  cnt=`expr $cnt + 1`
+ done
+ echo "$out"
+}
+
 ### now preparations for the main script!
 
 # set root for configuration files / working directory
@@ -491,11 +526,30 @@ case $vw in
 <p>select index name to modify entry, or
 <a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
 EOH
-# make header for user columns of page file
-   tablehead "$pagef" $nopageindex
+# make header for user columns of page file,
+# possibly adding showindex fields
+   if test "$showindex" = ""
+   then tablehead "$pagef" $nopageindex
+   else tablehead "$pagef" $nopageindex showindex
+# create sed patterns for showindex
+    sis=`showindexsrch "$showindex"`
+    sir=`showindexrepl "$showindex"`
+# generate showindex filtered index list
+    getlines '[+-]' <"$idx" | sed -e "s/$sis/$sir/" >$tmpi
+   fi
 # get lines with appropriate flag, and sort according to table head
-   getlines $i <"$pagef" | fieldsort |{ IFS="	" # TAB
-##### :::::::: TODO: ADD INJECTION OF ADDITIONAL INDEX FIELDS ::::::::
+   getlines $i <"$pagef" | fieldsort | {
+    if test "$showindex" = ""
+# if no showindex, just copy everything
+    then cat
+    else IFS="	" # TAB
+     while read in rem
+# else insert showindex fields after index
+     do ins=`getlines $in <$tmpi | head -n 1`
+      echo "$in$ins	$rem"
+     done
+    fi
+   } | { IFS="	" # TAB
     count=0
     while read in f1 desc
 # create link to edit view
