@@ -61,7 +61,7 @@ mydir=`dirname "$0"`
 tmpf=$tmpr.tmp
 inpt=$tmpr.inp
 # and showindex filtered index
-tmpi=$tmpf.idx
+tmpi=$tmpr.idx
 
 cat >$tmpf
 echo "$QUERY_STRING" >>$tmpf
@@ -240,8 +240,9 @@ tablehead(){
  sd=${sd:-0}
  nc=1
  if test "$3" = "showindex"
-# remove skipped fields consisting only of '-'
- then idxf=`echo "$showindex" | sed -e 's/-	//g'`
+# remove skipped fields consisting only of '-',
+# append TAB to end of list for later separation
+ then idxf=`echo "$showindex	" | sed -e 's/-	//g'`
  else idxf=''
  fi
  echo '<table><tr>'
@@ -365,29 +366,31 @@ EOH
 # search pattern: subpatterns for non-skip fields
 showindexsrch(){
  local out
- IFS="	"
  out=''
  while test "$1" != ""
  do case $1 in
   -) out="$out	[^	][^	]*" ;;
   *) out="$out	\\([^	][^	]*\\)" ;;
   esac
+  shift
  done
- echo "$out"
+# add wildcard to consume/delete all remaining fields
+ echo "$out.*"
 }
 
 # replace pattern: delete skip fields, replace non-skips with references
 showindexrepl(){
  local out cnt
- IFS="	"
  out=''
  cnt=1
  while test "$1" != ""
  do case $1 in
   -) : ;; # NO-OP
-  *) out="$out	\\$cnt" ;;
+  *) out="$out	\\$cnt"
+     cnt=`expr $cnt + 1`
+   ;;
   esac
-  cnt=`expr $cnt + 1`
+  shift
  done
  echo "$out"
 }
@@ -532,8 +535,8 @@ EOH
    then tablehead "$pagef" $nopageindex
    else tablehead "$pagef" $nopageindex showindex
 # create sed patterns for showindex
-    sis=`showindexsrch "$showindex"`
-    sir=`showindexrepl "$showindex"`
+    sis=`IFS="	";showindexsrch $showindex`
+    sir=`IFS="	";showindexrepl $showindex`
 # generate showindex filtered index list
     getlines '[+-]' <"$idx" | sed -e "s/$sis/$sir/" >$tmpi
    fi
@@ -546,7 +549,7 @@ EOH
      while read in rem
 # else insert showindex fields after index
      do ins=`getlines $in <$tmpi | head -n 1`
-      echo "$in$ins	$rem"
+      echo "$in	$ins	$rem"
      done
     fi
    } | { IFS="	" # TAB
