@@ -788,9 +788,9 @@ EOH
    tablehead "$pagef" 0
 # get number of rendered header fields
    totalcols=$?
-# delete link
+# delete link, and add empty option value (to fail if nothing selected)
    cat <<EOH
- <tr><td><select name="in">
+ <tr><td><select name="in"><option value=""> </option>
 EOH
 # get all possible index names, only uniques
   getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
@@ -848,7 +848,7 @@ EOH
   footer ;; # editentry.
 
  saveentry)
-  header 'save entry' "Saving page entry" "Attempting to save entry for $in on page $pg ..."
+  header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
   pagef="`pagefile page $pg`"
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
