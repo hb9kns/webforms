@@ -320,9 +320,9 @@ EOH
 }
 
 # sort according to field defined by $sc and $sd
-# with escaping of TAB and '|'
+# with separator TAB, ignore case and nonprintable characters
 fieldsort(){
- sed -e 's/|/|||/g;s/ /|~|/g' | sort $sortopt | sed -e 's/|~|/ /g;s/|||/|/g'
+ sort -t '	' -f -i -k $sc $sortopt
 }
 
 # grep for other indices, with additional trailing TAB, removed afterwards
@@ -496,8 +496,6 @@ case $sd in
  1) sortopt='-r' ;;
  *) sd=0 ; sortopt='' ;;
 esac
-# add field position, and ignore case, blank, and nonprintable
-sortopt="$sortopt -k $sc -f -b -i"
 
 # get and sanitize values
 in=`inptvar in '0-9a-zA-Z-'`
@@ -540,8 +538,8 @@ EOH
 # generate showindex filtered index list
     getlines '[+-]' <"$idx" | sed -e "s/$sis/$sir/" >$tmpi
    fi
-# get lines with appropriate flag, and sort according to table head
-   getlines $i <"$pagef" | fieldsort | {
+# get lines with appropriate flag
+   getlines $i <"$pagef" | {
     if test "$showindex" = ""
 # if no showindex, just copy everything
     then cat
@@ -552,7 +550,8 @@ EOH
       echo "$in	$ins	$rem"
      done
     fi
-   } | { IFS="	" # TAB
+# sort
+   } | fieldsort | { IFS="	" # TAB
     count=0
     while read in f1 desc
 # create link to edit view
