@@ -1,0 +1,6 @@
+# test suite, base/index file
+*	user	name	phone	e-mail
++	alice	Alice Wonderland	+1-234-5678	alice@example.com
++	fred	Fred Flintstone	+2-345-67890	fred@example.org
++	john	John Hyde	+9-876-5432	john@example.com
++	sue	Sue Sample	+8-765-4321	suzie@example.org
