@@ -386,13 +386,15 @@ showindexrepl(){
  while test "$1" != ""
  do case $1 in
   -) : ;; # NO-OP
-  *) out="$out	\\$cnt"
+  *) out="$out	:$cnt"
      cnt=`expr $cnt + 1`
    ;;
   esac
   shift
  done
- echo "$out"
+# replace ':' with '\', note TABs in patterns!
+# (cannot put '\' directly further above due to shell expansion for "$out")
+ echo "$out" | sed -e 's/	:/	\\/g'
 }
 
 ### now preparations for the main script!
