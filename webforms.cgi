@@ -140,7 +140,7 @@ getlines "$1" | sed -e 's/^/	/;s/$/	/' |
  grep "	$entry	" 2>&1 >/dev/null
 }
 
-# display header, arg.1 = page title, arg.2 = main title, arg.3.. = description
+# display header, arg.1 = page title, arg.2 = main title, arg.3 = description
 header(){
 cat <<EOH
 Content-type: text/html
@@ -173,11 +173,7 @@ cat <<EOH
 EOH
 # uncomment during maintenance
 # echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
-shift
-shift
-cat <<EOH
-<p>$*</p>
-EOH
+echo "<p>$3</p>"
 }
 
 # display footer with some additional info
