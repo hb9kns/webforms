@@ -1,0 +1,10 @@
+# test suite column list 1
+*	color
++	red
++	green
++	blue
+-	sweet
++	white
++	black
+-	sour
++	yellow
