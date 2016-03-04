@@ -263,16 +263,18 @@ tablehead(){
 # skip start columns
    if test $skip -gt 0
    then skip=`expr $skip - 1`
-# in case of list field, use title entry from file
-   else case $field in
-     list=*) field=`pagefile list ${field#*=} | getlines '*' | head -n 1` ;;
-     *) : ;;
+# report field numbers and names to caller
+   else echo $nc:$field >>$tmpf
+# if list field, get file name for list file,
+    case $field in
+     list=*) ffn="`pagefile list ${field#*=}`"
+# and use entry in first line beginning with '*'
+      field="`cat "$ffn" | getlines '[*]' | head -n 1`"
+      ;;
     esac
     cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
 EOH
-# report field numbers and names to caller
-    echo $nc:$field >>$tmpf
    fi
    nc=`expr $nc + 1`
   done
@@ -837,7 +839,7 @@ EOH
 EOH
 # get contents of file with name from field where all up to '=' is removed,
 # only using lines beginning with '+'
-      cat `pagefile list ${ffn#*=}` | getlines '+' | { while read itm
+      cat `pagefile list ${ffn#*=}` | getlines '[+]' | { while read itm
 # and generate options from file contents
 # (sanitizing of file contents not necessary, as done when entry is saved)
        do cat <<EOF
