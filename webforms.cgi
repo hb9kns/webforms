@@ -195,6 +195,7 @@ EOH
 cat <<EOH
 </pre>
 </body>
+<!-- some clients seem to prefer getting pragmas at the end -->
 <head>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
 <META HTTP-EQUIV="Expires" CONTENT="-1">
@@ -234,11 +235,13 @@ pageinfo(){
 #  if arg.3=showindex then also field names from config var 'showindex'
 # exit code = number of rendered columns
 tablehead(){
- local skip nc nd idxf
+ local skip nc nd idxf ffn
  skip=${2:-0}
  sc=${sc:-1}
  sd=${sd:-0}
- nc=1
+ nc=0
+# empty file used for reporting to caller
+ : >$tmpf
  if test "$3" = "showindex"
 # remove skipped fields consisting only of '-',
 # append TAB to end of list for later separation
@@ -256,21 +259,27 @@ tablehead(){
    then nd=`expr 1 - $sd`
    else nd=$sd
    fi
+# now render column titles with sort links:
 # skip start columns
    if test $skip -gt 0
    then skip=`expr $skip - 1`
-# render column title with sort link
-   else cat <<EOH
+# in case of list field, use title entry from file
+   else case $field in
+     list=*) field=`pagefile list ${field#*=} | getlines '*' | head -n 1` ;;
+     *) : ;;
+    esac
+    cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
 EOH
+# report field numbers and names to caller
+    echo $nc:$field >>$tmpf
    fi
    nc=`expr $nc + 1`
   done
-# report number of columns outside
-  expr $nc - 1 >$tmpf
  }
  echo '</tr>'
- return `cat $tmpf`
+# return number of last field
+ return `tail -n 1 $tmpf | sed -e 's/:.*//'`
 }
 
 tablefoot(){ echo '</table>' ; }
@@ -474,7 +483,7 @@ fi
 
 # define permitted characters for record fields
 fieldchars=`getlines fieldchars <"$cfg" | head -n 1`
-fieldchars=${fieldchars:-$defaultfieldchars}
+fieldchars="${fieldchars:-$defaultfieldchars}"
 # get additional index fields to be shown in page view
 # get arguments after "showindex" config var, only first line,
 showindex=`getlines showindex <"$cfg" | head -n 1`
@@ -647,7 +656,7 @@ EOH
  <form enctype="application/x-www-form-urlencoded" method="post" action="$myself">
 EOH
   tablehead "$idx" 0
-# get number of rendered header fields
+# get number of rendered header fields reported by 'tablehead'
   totalcols=$?
   cat <<EOH
  <tr>
@@ -786,26 +795,26 @@ EOH
 EOH
 # make header for user columns of page file, with all columns
    tablehead "$pagef" 0
-# get number of rendered header fields
+# get number of rendered header fields reported by 'tablehead'
    totalcols=$?
-# delete link, and add empty option value (to fail if nothing selected)
+# add empty option value (to fail if nothing selected)
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
 EOH
 # get all possible index names, only uniques
-  getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
-   while read nin
-   do if test "$nin" = "$in"
-    then cat <<EOH
+   getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
+    while read nin
+    do if test "$nin" = "$in"
+     then cat <<EOH
   <option value="$nin" selected>$nin #</option>
 EOH
-    else cat <<EOH
+     else cat <<EOH
   <option value="$nin">$nin</option>
 EOH
-    fi
-   done
-  }
-  cat <<EOH
+     fi
+    done
+   }
+   cat <<EOH
  </select></td>
 EOH
 # read record fields of current index, split onto separate lines
@@ -813,22 +822,41 @@ EOH
 :g;s/"/\\"/g' | {
     fn=1
     af=autofocus # for first field
-    while read field
-# populate fields with current values
-    do cat <<EOH
-  <td>
-   <input type="text" name="f$fn" value="$field" maxlength="$maxflength" $af>
-  </td>
+# loop for all necessary input fields
+    while test $fn -le $totalcols
+    do read field
+     echo '  <td>'
+# get field name as reported by 'tablehead'
+     ffn=`grep "^$fn:" $tmpf`
+# and check after removal of characters up to first ':'
+     case ${ffn#*:} in
+# if field name is reference to list file ..
+# start selection field
+     list=*) cat <<EOH
+   <select name="f$fn">
 EOH
+# get contents of file with name from field where all up to '=' is removed,
+# only using lines beginning with '+'
+      cat `pagefile list ${ffn#*=}` | getlines '+' | { while read itm
+# and generate options from file contents
+# (sanitizing of file contents not necessary, as done when entry is saved)
+       do cat <<EOF
+      <option value="$itm">$itm</option>
+EOF
+       done
+# end of selection field
+      echo '   </select>'
+      }
+     ;;
+# .. else populate with current values (or empty, if nothing read)
+     *) cat <<EOH
+   <input type="text" name="f$fn" value="$field" maxlength="$maxflength" $af>
+EOH
+     ;;
+     esac
+     echo '  </td>'
      fn=`expr $fn + 1`
      af=''
-    done
-# add empty fields, if less present than in header line
-    while test $fn -lt $totalcols
-    do cat <<EOH
-  <td><input type="text" name="f$fn" value=""></td>
-EOH
-     fn=`expr $fn + 1`
     done
    }
    echo ' </tr>'
