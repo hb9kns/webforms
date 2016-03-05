@@ -1,11 +1,11 @@
 # names and email addresses
-*	PersNr	Family name	Given name	E-Mail
-+	1001	fa	ga	ea
-+	1002	fb	gb	eb
-+	1003	dings	bums	ohaletz
-+	1005	kajf	8923jh	kaljfsd0
-+	1008	me	myself	x@y
-+	1006	six	sechs	so@was
-+	1004	nilp	nilp	nilp
-+	1007	family	given	mail
--	a-b23webde	a-1+2.3_4@w.e	 	 
+*	PersNr	Family name	Name	E-Mail
++	1001	Family01	One	one@example.com
++	1002	Family02	Two	two@example.org
++	1003	Family03	Three	three@example.com
++	1005	Family05	Four	four@example.org
++	1008	Family08	Eight	eight@example.com
++	1006	Family06	Six	six@example.org
++	1004	Family04	Four	four@example.com
++	1007	Family07	Seven	seven@example.org
+-	2001	Family9000	HAL	hal9000@example.com

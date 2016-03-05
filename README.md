@@ -87,6 +87,12 @@ cannot be modified.  When an index entry is to be saved, the
 show/hide operation can also be applied to all pages, i.e the
 corresponding page records are simultaneously shown/hidden.
 
+Header fields with the structure `list=listname` will result in the
+corresponding field being a selection field, with options coming from
+lines in the file `listname` beginning with '+' (only the part after
+TAB is used). This allows to predefine a limited number of possible
+entries for certain fields.
+
 Page entries with leading `-` normally are not displayed when the
 page is rendered, but they can be un-hidden, and also be edited.
 
@@ -106,11 +112,11 @@ without warning, if the user has appropriate permissions.
 #### example record file
 
 	# entrance and leave database
-	*	index	arrival date	departure date
-	+	1001	January 2013	present
-	-	1002	March 1987	June 2001
-	+	1003	April 1984	present
-	+	1004	June 2014	November 2015
+	*	index	arrival date	departure date	list=listone
+	+	1001	January 2013	present	green
+	-	1002	March 1987	June 2001	blue
+	+	1003	April 1984	present	red
+	+	1004	June 2014	November 2015	yellow
 
 In this case, the index entry 1002 would no longer be available in the
 record tables, and the entry for index 1002 would not be displayed,
@@ -162,6 +168,7 @@ error.
 	base	file	relative/path/to/basefile.txt	basefile description
 	page	pageone another/path/to/pageone.txt	page one description
 	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
+	list	listone	relative/path/somewhere/l1.txt	list/selection file
 	# suppress displaying index/base field in page view
 	nopageindex	true
 	# reduce the maximum size of text fields in record input form
@@ -169,18 +176,19 @@ error.
 	# logfile (no logging if unwritable!)
 	log	file	test.log
 	# how to warn about empty fields (can be undefined)
-	emptywarn	<font color="red">/EMPTY/</font>
+	emptywarn	<font color="red">*EMPTY*</font>
 	# pattern of allowed characters in fields,
 	# default = all ASCII characters from SPC to ~ (tilde)
 	#fieldchars	' -~'
 	# additional index field names to be shown in pageviews:
 	# skip fields with a single dash '-', never use '|' in these names!
 	# (in this example: only 'given' but not 'name' or 'mail')
-	#showindex	-	given name
+	#showindex	-	name
+	# user permissions:
 	# type	names
 	admin	chief	johnny	sue
 	editor	pam	james
-	# (due to visitor line, allow only explicitly listed users)
+	# if visitor line is defined, only allow explicitly listed users
 	visitor	jimmy
 
 ## CGI

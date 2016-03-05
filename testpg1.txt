@@ -1,6 +1,0 @@
-# test suite, page file
-*	user	joined	left
-+	alice	2001-1	-
-+	sue	1999-5	2013-12
-+	fred	2005-8	-
-+	john	2009-2	2016-2
