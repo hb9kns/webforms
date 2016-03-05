@@ -235,13 +235,13 @@ tablehead(){
  skip=${2:-0}
  sc=${sc:-1}
  sd=${sd:-0}
- nc=0
+ nc=1
 # empty file used for reporting to caller
  : >$tmpf
  if test "$3" = "showindex"
 # remove skipped fields consisting only of '-',
 # append TAB to end of list for later separation
- then idxf=`echo "$showindex	" | sed -e 's/-	//g'`
+ then idxf=`echo "$showindex	" | sed -e 's/-	//g;s/	/*	/g'`
  else idxf=''
  fi
  echo '<table><tr>'
@@ -669,7 +669,7 @@ EOH
 EOH
     fn=`expr $fn + 1`
    done
-   while test $fn -lt $totalcols
+   while test $fn -le $totalcols
    do cat <<EOH
   <td><input type="text" name="f$fn" value=""></td>
 EOH
@@ -712,7 +712,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -lt $totalcols
+   while test $i -le $totalcols
    do
     nf="`inptvar f$i \"$fieldchars\"`"
 # separate fields by TAB, replace empty fields by SPC
@@ -838,9 +838,15 @@ EOH
       cat `pagefile list ${ffn#*=}` | getlines '[+]' | { while read itm
 # and generate options from file contents
 # (sanitizing of file contents not necessary, as done when entry is saved)
-       do cat <<EOF
+# possibly preselecting option already present in database
+       do if test "$itm" = "$field"
+        then cat <<EOF
+      <option value="$itm" selected>$itm</option>
+EOF
+        else cat <<EOF
       <option value="$itm">$itm</option>
 EOF
+        fi
        done
 # end of selection field
       echo '   </select>'
@@ -897,7 +903,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -lt $totalcols
+   while test $i -le $totalcols
    do
 # separate fields by TAB, replace empty fields by SPC
     nf="`inptvar f$i \"$fieldchars\"`"
