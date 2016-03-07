@@ -1,11 +1,11 @@
 # names and email addresses
 *	PersNr	Family name	Name	E-Mail	list=color
-+	1001	Family01	One	one@example.com
-+	1003	Family03	Three	three@example.com
-+	1005	Family05	Four	four@example.org
-+	1008	Family08	Eight	eight@example.com
-+	1006	Family06	Six	six@example.org
-+	1004	Family04	Four	four@example.com
-+	1007	Family07	Seven	seven@example.org
-+	2001	Family9000	HAL	hal9000@example.com
-+	1002	Family02	TwoTwo	totwo@example.net
++	1001	Family01	One	one@example.com	NIL
++	1003	Family03	Three	three@example.com	NIL
++	1005	Family05	Four	four@example.org	NIL
++	1008	Family08	Eight	eight@example.com	NIL
++	1006	Family06	Six	six@example.org	NIL
++	1004	Family04	Four	four@example.com	NIL
++	1007	Family07	Seven	seven@example.org	NIL
++	2001	Family9000	HAL	hal9000@example.com	NIL
++	1002	Family02	TwoTwo	totwo@example.net	NIL
