@@ -64,64 +64,74 @@ There is one *base* or *index* file, containing one unique index
 number/name per line, with one or more descriptive fields.  This
 index is used as reference in additional files, which again contain
 a field for the index, and an arbitrary number of record fields.
-Each of these additional files are rendered as HTML tables by the
-script.
+Each of these files are rendered as HTML tables by the script.
 
 All lines start with a flag character, which is one of the set
 `#+-*` (possibly more in future versions).  All fields are separated
-by `TAB` characters which therefore is forbidden as content of any
-field.  Lines beginning with `#` (comments) or any unknown character
-are ignored. Empty lines are ignored as well.  The first line
-starting with `*` is the table header; any additional line starting
-with `*` is completely ignored.
+by `TAB` characters which therefore are forbidden as content of any
+field.
 
-Index fields must be unique, and this is enforced by the script:
+- Lines beginning with `#` (comments) or any unrecognized character are completely ignored, as well as empty lines.
+- The first line starting with `*` is the table header; any additional line starting with `*` is ignored.
+- Lines beginning with `+` or `-` are database entries, and their fields after `+` or `-` contain the index.
+- The order of lines may be changed by the CGI script, except for comment and header lines at the beginning of files, which will stay there. Any later interspersed comment or header lines may be moved to the beginning as well.
+
+*Index fields must be unique,* and this is enforced by the script:
 any duplicate entry may be overwritten and only one retained.
 
 Normally, entry lines start with the `+` flag character. This
-renders them as available.
+renders them as available or "shown."
 
 Index entries with leading `-` are not available for edition or
 creation of page entries, i.e, any entry with such an index name
-cannot be modified.  When an index entry is to be saved, the
+cannot be modified and is "hidden."  When an index entry is to be saved, the
 show/hide operation can also be applied to all pages, i.e the
 corresponding page records are simultaneously shown/hidden.
 
 Header fields with the structure `list=listname` will result in the
 corresponding field being a selection field, with options coming from
-lines in the file `listname` beginning with '+' (only the part after
+all lines of the file `listname` beginning with '+' (only the part after
 TAB is used). This allows to predefine a limited number of possible
 entries for certain fields.
 
 Page entries with leading `-` normally are not displayed when the
-page is rendered, but they can be un-hidden, and also be edited.
+page is rendered, but they can be "un-hidden," and also be edited.
 
-Please note that any entry (index or page data) may be overwritten
+Please note that any existing entry (index or page data) may be overwritten
 without warning, if the user has appropriate permissions.
 
 #### example base/index file
 
+_Please note the TAB characters always separating fields!_
+
 	# names and email addresses
-	# Jamie is no longer active ("deleted")
-	*	index	name	given	mail
-	+	1001	Deere	John	jode@example.com
-	-	1002	Crown	Jamie	jacr@example.com
-	+	1003	Baker	Jack	jaba@example.com
-	+	1004	Able	Joan	joab@example.com
+	*	PersNr	Family name	Name	E-Mail	list=color
+	+	1001	Family01	One	one@example.com	red
+	+	1003	Family03	Three	three@example.com	green
+	+	1005	Family05	Four	four@example.org	blue
+	+	1008	Family08	Eight	eight@example.com	black
+	+	1006	Family06	Six	six@example.org	yellow
+	+	1004	Family04	Four	four@example.com	lilac
+	+	1007	Family07	Seven	seven@example.org	amber
+	-	2001	Family9000	HAL	hal9000@example.com	gold
+	+	1002	Family02	TwoTwo	totwo@example.net	cyan
 
 #### example record file
 
 	# entrance and leave database
-	*	index	arrival date	departure date	list=listone
-	+	1001	January 2013	present	green
-	-	1002	March 1987	June 2001	blue
-	+	1003	April 1984	present	red
-	+	1004	June 2014	November 2015	yellow
+	*	PersNr	Arrival date	Departure date	list=divis
+	+	1008	sooner	later	HR
+	+	1006	2015-01-22	2015-12-1	IT
+	+	1007	May 1984	present	IT
+	-	1002	2015-01-22	2015-12-19	mgmt
+	+	1003	June 2014	November 2015	finances
+	+	1004	June 2008	August 2015	production
+	+	1005	beginning	end	production
+	+	1001	April 1948	2001	HR
 
-In this case, the index entry 1002 would no longer be available in the
+In this case, the index entry 2001 would not be available in the
 record tables, and the entry for index 1002 would not be displayed,
 when the record file is rendered.
-The latter can be changed in the page view, however.
 
 ### Configuration file
 
@@ -137,13 +147,33 @@ the page name, and may be followed by a description, which will be
 included in the rendered page headers.
 The page name for the index file must be set to `file` for correct syntax.
 
-By setting the field `nopageindex` to something else than `false` or `0` ,
+List files used for populating selection fields are indicated by `list`
+followed by their reference name, file name, and optionally description.
+
+File names can be absolute or relative; the starting directory is the
+working directory of the CGI script.
+
+By setting the entry `nopageindex` to something else than `false` or `0` ,
 displaying of the column for the index/base string can be suppressed.
 This column normally is shown as the first one in page views,
 but it may be of little use in case of numeric or random-like values.
 
 With the field `emptywarn` a string can be defined which will be displayed
 in place of empty fields. This can be any valid HTML code (see example).
+
+The entry `showindex` can be used to indicate additional fields from the
+index/base file to be displayed in pages. The field positions correspond
+to the header fields of the base file, and any `showindex` field other than
+`-` will display the corresponding base entry field with its name as header,
+c.f example configuration.
+
+The value after `maxfieldlength` will limit form entry fields to the given
+character length; however, any length will displayed when database contents
+are rendered.
+
+With `fieldchars` the permitted characters in entry fields can be listed.
+By default, all printable ASCII characters are allowed. `TAB` is always
+excluded from all fields, though.
 
 Permission levels for user names (passed via `REMOTE_USER` from the webserver)
 can be set with field names `admin/editor/visitor`.
@@ -157,39 +187,41 @@ the corresponding permissions. The highest level available will be applied.
 E.g, an entry of `admin	*` will grant admin permissions to all users,
 even if they are listed in `editor` or `visitor` lines.
 
-Logging can be switched on by setting the field `log` with page name 'log'
-and the file name. If the file is not writable, no logging will occur without
-error.
+Logging can be switched on by setting the field `log` with page name 'file'
+and the file name. If the file is not writable, no logging will occur, without
+any error.
 
 #### example configuration file
 
-	# test suite configuration
-	# type	name	filename
-	base	file	relative/path/to/basefile.txt	basefile description
-	page	pageone another/path/to/pageone.txt	page one description
-	page	pagetwo	/absolute/path/to/pagetwo.txt	page two description
-	list	listone	relative/path/somewhere/l1.txt	list/selection file
-	# suppress displaying index/base field in page view
-	nopageindex	true
+	# test config file
+	# file definitions
+	# base	file	relative/path/to/basefile.txt	basefile description
+	base	file	test.base	People
+	page	dates	test.dates	Dates
+	list	color	test.color	favourite color
+	list	divis	test.div	company division
+	# uncomment to suppress displaying index/base field in page view
+	#nopageindex	true
+	# user permissions:
+	admin	chief	nobody
+	editor	deputy
+	# if visitor line is defined, only allow explicitly listed users
+	visitor	dings
+	# display definitions:
+	# additional index field names to be shown in pageviews:
+	# skip fields with a single dash '-', never use '|' in these names!
+	# here, the 3rd and 4th index/base entry fields are used, and the
+	# 1st and 2nd are skipped
+	showindex	-	-	Email	Fav.color
+	# how to warn about empty fields (can be undefined)
+	emptywarn	<font color="red"><b>#EMPTY#</b></font>
 	# reduce the maximum size of text fields in record input form
 	maxfieldlength	80
 	# logfile (no logging if unwritable!)
 	log	file	test.log
-	# how to warn about empty fields (can be undefined)
-	emptywarn	<font color="red">*EMPTY*</font>
 	# pattern of allowed characters in fields,
 	# default = all ASCII characters from SPC to ~ (tilde)
 	#fieldchars	' -~'
-	# additional index field names to be shown in pageviews:
-	# skip fields with a single dash '-', never use '|' in these names!
-	# (in this example: only 'given' but not 'name' or 'mail')
-	#showindex	-	name
-	# user permissions:
-	# type	names
-	admin	chief	johnny	sue
-	editor	pam	james
-	# if visitor line is defined, only allow explicitly listed users
-	visitor	jimmy
 
 ## CGI
 
