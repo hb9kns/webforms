@@ -842,9 +842,9 @@ EOH
 EOH
 # get all possible index entries, get two fields and some more info,
 # sort, and only uniques
-# (replace first TAB with SPC, next TAB with '|', then 20 chars after '|')
+# (replace all TABs with ' | ', and add some more chars after 3rd)
    getlines '[+]' <"$idx" |
-    sed -e 's/	/ /;s/	/|/;s/|\(.\{1,20\}\).*/ \1 .../;s/	/ /g' |
+    sed -e 's/	/|/;s/	/|/;s/	\(.\{1,9\}\).*/|\1../;s/[|	]/ | /g' |
     sort -u | {
 # read index and additional remarks
     while read nin rem
