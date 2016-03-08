@@ -2,7 +2,7 @@
 *	PersNr	Family name	Name	E-Mail	list=color
 +	1001	Family01	One	one@example.com	NIL
 +	1003	Family03	Three	three@example.com	NIL
-+	1005	Family05	Four	four@example.org	NIL
++	1005	Family05	Five	five@example.org	NIL
 +	1008	Family08	Eight	eight@example.com	NIL
 +	1006	Family06	Six	six@example.org	NIL
 +	1004	Family04	Four	four@example.com	NIL
