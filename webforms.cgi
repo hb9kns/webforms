@@ -753,7 +753,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -le $totalcols
+   while test $i -lt $totalcols
    do
     nf="`inptvar f$i \"$fieldchars\"`"
 # separate fields by TAB, replace empty fields by SPC
@@ -900,7 +900,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -le $totalcols
+   while test $i -lt $totalcols
    do
 # separate fields by TAB, replace empty fields by SPC
     nf="`inptvar f$i \"$fieldchars\"`"
