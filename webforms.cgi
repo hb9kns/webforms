@@ -840,15 +840,21 @@ EOH
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
 EOH
-# get all possible index names, only uniques
-   getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
-    while read nin
+# get all possible index entries, get two fields and some more info,
+# sort, and only uniques
+# (replace first TAB with SPC, next TAB with '|', then 20 chars after '|')
+   getlines '[+]' <"$idx" |
+    sed -e 's/	/ /;s/	/|/;s/|\(.\{1,20\}\).*/ \1 .../;s/	/ /g' |
+    sort -u | {
+# read index and additional remarks
+    while read nin rem
     do if test "$nin" = "$in"
+# mark&select already present value
      then cat <<EOH
-  <option value="$nin" selected>$nin #</option>
+  <option value="$nin" selected>$nin $rem ###</option>
 EOH
      else cat <<EOH
-  <option value="$nin">$nin</option>
+  <option value="$nin">$nin $rem</option>
 EOH
      fi
     done
