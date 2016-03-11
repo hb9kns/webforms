@@ -1,0 +1,11 @@
+# entrance and leave database
+*	PersNr	Arrival date	Departure date	list=divis
++	1008	sooner	later	HR
++	1006	2015-01-22	2015-12-1	IT
++	1007	May 1984	present	IT
++	1002	2015-01-22	2015-12-19	mgmt
++	1003	June 2014	November 2015	finances
++	1004	June 2008	August 2015	production
++	1005	beginning	end	production
++	2001	now	never	mgmt
++	1001	right now	somewhat later	IT

@@ -1,5 +1,5 @@
 #!/bin/sh
-# webforms.cgi (2015 Yargo Bonetti)
+# webforms.cgi (2016 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
 
 # set root for temporary files
@@ -278,6 +278,59 @@ EOH
  echo '</tr>'
 # return number of last field
  return `tail -n 1 $tmpf | sed -e 's/:.*//'`
+}
+
+# generate table body from stdin for item/page entry, using $totalcols and
+# header list in $tmpf reported by 'tablehead', arg.1 = start column
+tableentry(){
+ local en fn ffn af
+ fn=${1:-1}
+# form entry number
+ en=`expr $fn - 1`
+ af=autofocus # for first field
+# loop for all necessary input fields
+ while test $fn -le $totalcols
+ do read field
+  echo '  <td>'
+# get field name as reported by 'tablehead'
+  ffn=`grep "^$fn:" $tmpf`
+# and check after removal of characters up to first ':'
+  case ${ffn#*:} in
+# if field name is reference to list file ..
+# start selection field
+   list=*) cat <<EOH
+  <select name="f$en">
+EOH
+# get contents of file with name from field where all up to '=' is removed,
+# only using lines beginning with '+'
+    cat `pagefile list ${ffn#*=}` | getlines '[+]' | { while read itm
+# and generate options from file contents
+# (sanitizing of file contents not necessary, as done when entry is saved)
+# possibly preselecting option already present in database
+    do if test "$itm" = "$field"
+     then cat <<EOF
+   <option value="$itm" selected>$itm</option>
+EOF
+     else cat <<EOF
+   <option value="$itm">$itm</option>
+EOF
+     fi
+    done
+# end of selection field
+   echo '   </select>'
+   }
+   ;;
+# .. else populate with current values (or empty, if nothing read)
+  *) cat <<EOH
+ <input type="text" name="f$en" value="$field" maxlength="$maxflength" $af>
+EOH
+   ;;
+  esac
+  echo '  </td>'
+  en=`expr $en + 1`
+  fn=`expr $fn + 1`
+  af=''
+ done
 }
 
 tablefoot(){ echo '</table>' ; }
@@ -660,22 +713,10 @@ EOH
  <tr>
   <td><input type="text" name="in" value="$in" /></td>
 EOH
-# get selected index (but only the first one)
+# get selected index (but only the first one) and add entry line,
+# starting at field 2 (after index)
   getlines '[+-]' <"$idx" | getlines $in | head -n 1 | sed -e 's:	:\
-:g;s/"/\\"/g' | { fn=1 # index field already counts as 1
-   while read field
-   do cat <<EOH
-  <td><input type="text" name="f$fn" value="$field"></td>
-EOH
-    fn=`expr $fn + 1`
-   done
-   while test $fn -le $totalcols
-   do cat <<EOH
-  <td><input type="text" name="f$fn" value=""></td>
-EOH
-    fn=`expr $fn + 1`
-   done
-  }
+:g;s/"/\\"/g' | tableentry 2
   echo ' </tr>'
   tablefoot
   cat <<EOH
@@ -712,7 +753,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -le $totalcols
+   while test $i -lt $totalcols
    do
     nf="`inptvar f$i \"$fieldchars\"`"
 # separate fields by TAB, replace empty fields by SPC
@@ -799,15 +840,21 @@ EOH
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
 EOH
-# get all possible index names, only uniques
-   getlines '[+]' <"$idx" | sed -e 's/	.*//' | sort -u | {
-    while read nin
+# get all possible index entries, get two fields and some more info,
+# sort, and only uniques
+# (replace all TABs with ' | ', and add some more chars after 2nd)
+   getlines '[+]' <"$idx" |
+    sed -e 's/	/|/;s/	\(.\{1,9\}\).*/|\1../;s/[|	]/ | /g' |
+    sort -u | {
+# read index and additional remarks
+    while read nin rem
     do if test "$nin" = "$in"
+# mark&select already present value
      then cat <<EOH
-  <option value="$nin" selected>$nin #</option>
+  <option value="$nin" selected>$nin $rem ###</option>
 EOH
      else cat <<EOH
-  <option value="$nin">$nin</option>
+  <option value="$nin">$nin $rem</option>
 EOH
      fi
     done
@@ -815,54 +862,10 @@ EOH
    cat <<EOH
  </select></td>
 EOH
-# read record fields of current index, split onto separate lines
+# read record fields of current index, split onto separate lines, and
+# generate table entry, starting at field 2 (after index)
    getlines '[+-]' <"$pagef" | getlines $in | head -n 1 | sed -e 's:	:\
-:g;s/"/\\"/g' | {
-    fn=1
-    af=autofocus # for first field
-# loop for all necessary input fields
-    while test $fn -le $totalcols
-    do read field
-     echo '  <td>'
-# get field name as reported by 'tablehead'
-     ffn=`grep "^$fn:" $tmpf`
-# and check after removal of characters up to first ':'
-     case ${ffn#*:} in
-# if field name is reference to list file ..
-# start selection field
-     list=*) cat <<EOH
-   <select name="f$fn">
-EOH
-# get contents of file with name from field where all up to '=' is removed,
-# only using lines beginning with '+'
-      cat `pagefile list ${ffn#*=}` | getlines '[+]' | { while read itm
-# and generate options from file contents
-# (sanitizing of file contents not necessary, as done when entry is saved)
-# possibly preselecting option already present in database
-       do if test "$itm" = "$field"
-        then cat <<EOF
-      <option value="$itm" selected>$itm</option>
-EOF
-        else cat <<EOF
-      <option value="$itm">$itm</option>
-EOF
-        fi
-       done
-# end of selection field
-      echo '   </select>'
-      }
-     ;;
-# .. else populate with current values (or empty, if nothing read)
-     *) cat <<EOH
-   <input type="text" name="f$fn" value="$field" maxlength="$maxflength" $af>
-EOH
-     ;;
-     esac
-     echo '  </td>'
-     fn=`expr $fn + 1`
-     af=''
-    done
-   }
+:g;s/"/\\"/g' | tableentry 2
    echo ' </tr>'
    tablefoot
    cat <<EOH
@@ -903,7 +906,7 @@ EOH
    fi
 # add new/modified fields to initial flag and index name
    i=1
-   while test $i -le $totalcols
+   while test $i -lt $totalcols
    do
 # separate fields by TAB, replace empty fields by SPC
     nf="`inptvar f$i \"$fieldchars\"`"
