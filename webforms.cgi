@@ -1,11 +1,11 @@
 #!/bin/sh
-# webforms.cgi (2016 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
 info='webforms.cgi // 2016-08-08 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern for non-important files, as there
 # will be an 'rm -f $tmpr*' command at the end of the script!)
+# if `$TMP` contains whitespace or other crap, hell may break loose
 tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
@@ -16,7 +16,7 @@ dobackup(){
 ## git version
  #git add "$1" && git commit -m "$dmesg"
 ## rcs version
- #ci -l -w$usr -m"$dmesg" "$1"
+ #ci -l -w"$usr" -m"$dmesg" "$1"
 ## poor man's version -- if commenting, do all lines of <<HERE document!
  cat <<EOH >>"$1.diff"
 
@@ -182,8 +182,8 @@ footer(){
 cat <<EOH
 <hr />
 <p><small><i>
-$info
- on <tt>`hostname`</tt>
+$info<br />
+running on <tt>`hostname`</tt>
  (`w|head -n 1`)
 </i></small></p>
 <pre>
@@ -267,7 +267,7 @@ tablehead(){
     case $field in
      list=*) ffn="`pagefile list ${field#*=}`"
 # and use entry in first line beginning with '*'
-      field="`cat "$ffn" | getlines '[*]' | head -n 1`"
+      field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
     esac
     cat <<EOH
@@ -305,11 +305,22 @@ tableentry(){
 EOH
 # get contents of file with name from field where all up to '=' is removed,
 # only using lines beginning with '+'
-    cat `pagefile list ${ffn#*=}` | getlines '[+]' | { while read itm
+    cat "`pagefile list ${ffn#*=}`" | getlines '[+]' | { while read itm maxnum
 # and generate options from file contents
 # (sanitizing of file contents not necessary, as done when entry is saved)
 # possibly preselecting option already present in database
-    do if test "$itm" = "$field"
+    do
+# if there is a limit for this option
+     if test "$maxnum" != ""
+     then
+# get all other active entries of this field, filter for this option, and count
+      if test `grepothers "$in" <"$pagef" | getlines '[+]' | cut -f $fn | grep "$itm" | wc -l` -ge $maxnum
+# if maximum reached, generate unavailable entry
+      then itm=$itm:UNAVAILABLE/FULL
+      fi
+     fi
+# preselect former value
+     if test "$itm" = "$field"
      then cat <<EOF
    <option value="$itm" selected>$itm</option>
 EOF
@@ -324,7 +335,7 @@ EOF
    ;;
 # .. else populate with current values (or empty, if nothing read)
   *) cat <<EOH
- <input type="text" name="f$en" value="$field" maxlength="$maxflength" $af>
+ <input type="text" name="f$en" value="$field" maxlength="$maxflength" $af />
 EOH
    ;;
   esac
@@ -469,7 +480,7 @@ defcfg=default
 
 # define config file name
 db=`inptvar db '.0-9A-Za-z_-'`
-cfg="$wdir/${db:-defcfg}.cfg"
+cfg="$wdir/${db:-$defcfg}.cfg"
 if test ! -r "$cfg"
 then fatal "configuration file $cfg not readable"
 # this should never be reached, but just to be sure:
@@ -489,17 +500,18 @@ permvisitor=1
 # establish permissions (the higher, the better)
 # admin and editor can have '*' entries, granting permissions to *any user*
 perms=0
-usr=${REMOTE_USER:-nobody}
-if checkline admin $usr <"$cfg" || checkline admin '\*' <"$cfg"
+# sanitize to be sure (we prefer script failure to possible security risk)
+usr=`echo ${REMOTE_USER:-nobody}|tr -c -d '0-9A-Za-z.-'`
+if checkline admin "$usr" <"$cfg" || checkline admin '\*' <"$cfg"
 then perms=$permadmin
 else
- if checkline editor $usr <"$cfg" || checkline editor '\*' <"$cfg"
+ if checkline editor "$usr" <"$cfg" || checkline editor '\*' <"$cfg"
  then perms=$permeditor
  else
 # if "visitor" entries exist, user must be explicitly allowed
   if grep "^visitor" "$cfg" 2>&1 >/dev/null
   then
-   if checkline visitor $usr <"$cfg"
+   if checkline visitor "$usr" <"$cfg"
    then perms=$permvisitor
    else perms=0
    fi
@@ -568,15 +580,22 @@ vw=`inptvar vw '0-9A-Za-z'`
 
 ### now the real work!
 
+# additional filter depending on REMOTE_USER normally inactive (pass all)
+usrfilter='.*'
+
 # get page file name, either normal or dood(le),
 # and set doodle flag for later
 pagef="`pagefile page $pg`"
+doodle=nil
 if test -r "$pagef"
 then doodle=no
 else pagef="`pagefile dood $pg`"
  if test -r "$pagef"
  then doodle=yes
- else doodle=nil
+# for doodle page, non-admin users can only see their own entries
+  if test $perms -lt $permadmin
+  then usrfilter="$usr"
+  fi
  fi
 fi
 
@@ -616,8 +635,8 @@ EOH
 # generate showindex filtered index list
     getlines '[+-]' <"$idx" | sed -e "s/$sis/$sir/" >$tmpi
    fi
-# get lines with appropriate flag
-   getlines $i <"$pagef" | {
+# get lines with appropriate flag and apply user-dependant filter
+   getlines $i <"$pagef" | grep "^$usrfilter" | {
     if test "$showindex" = ""
 # if no showindex, just copy everything
     then cat
@@ -727,7 +746,7 @@ EOH
   totalcols=$?
   cat <<EOH
  <tr>
-  <td><input type="text" name="in" value="$in" /></td>
+  <td><input type="text" name="in" value="$in" maxlength="$maxflength" /></td>
 EOH
 # get selected index (but only the first one) and add entry line,
 # starting at field 2 (after index)
@@ -736,12 +755,12 @@ EOH
   echo ' </tr>'
   tablefoot
   cat <<EOH
-SHOW<input type="checkbox" name="fa" value="show" checked>
+SHOW<input type="checkbox" name="fa" value="show" checked />
 (also apply to all PAGES<input type="checkbox" name="pages" value="all">)
- <input type="hidden" name="db" value="$db">
- <input type="hidden" name="pg" value="$pg">
- <input type="hidden" name="vw" value="saveindex">
- <input type="submit" name="submit" value="SAVE">
+ <input type="hidden" name="db" value="$db" />
+ <input type="hidden" name="pg" value="$pg" />
+ <input type="hidden" name="vw" value="saveindex" />
+ <input type="submit" name="submit" value="SAVE" />
  </form>
 EOH
   footer ;; # editindex.
@@ -841,7 +860,11 @@ EOH
   header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, uncheck SHOW to hide entry"
   permwarn $permeditor
   maxflength=`getlines maxlength <"$cfg" | head -n 1`
-  maxflength=${maxflength:-199}
+  maxflength=${maxflength:-999}
+# make sure in case of dood page, only permitted user name is passed
+  if test $doodle = yes -a "$usrfilter" != '.*'
+  then in="$usr"
+  fi
   if test -r "$pagef"
   then
    cat <<EOH
@@ -851,6 +874,8 @@ EOH
    tablehead "$pagef" 0
 # get number of rendered header fields reported by 'tablehead'
    totalcols=$?
+   case $doodle in
+   no) # in case of normal page
 # add empty option value (to fail if nothing selected)
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
@@ -877,6 +902,15 @@ EOH
    cat <<EOH
  </select></td>
 EOH
+   ;;
+   yes) # in case of dood page
+    cat <<EOH
+ <tr><td>
+ <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
+ </td>
+EOH
+   ;;
+   esac
 # read record fields of current index, split onto separate lines, and
 # generate table entry, starting at field 2 (after index)
    getlines '[+-]' <"$pagef" | getlines $in | head -n 1 | sed -e 's:	:\
@@ -884,11 +918,11 @@ EOH
    echo ' </tr>'
    tablefoot
    cat <<EOH
- <input type="hidden" name="db" value="$db">
- <input type="hidden" name="pg" value="$pg">
- <input type="hidden" name="vw" value="saveentry">
- <input type="checkbox" name="fa" value="show" checked>SHOW
- <input type="submit" name="submit" value="SAVE">
+ <input type="hidden" name="db" value="$db" />
+ <input type="hidden" name="pg" value="$pg" />
+ <input type="hidden" name="vw" value="saveentry" />
+ <input type="checkbox" name="fa" value="show" checked />SHOW
+ <input type="submit" name="submit" value="SAVE" />
  </form>
 EOH
   else cat <<EOH
@@ -899,6 +933,10 @@ EOH
 
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
+# make sure in case of dood page, only permitted user name is passed
+  if test $doodle = yes -a "$usrfilter" != '.*'
+  then in="$usr"
+  fi
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
   then cat <<EOH

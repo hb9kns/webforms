@@ -131,6 +131,21 @@ In this case, the index entry 2001 would not be available in the
 record tables, and the entry for index 1002 would not be displayed,
 when the record file is rendered.
 
+#### example list file
+
+	# favourites
+	*	color
+	+	green
+	+	blue
+	+	cyan
+	+	gold
+	+	black	5
+	+	lilac
+	+	amber
+
+The selection `black` is only allowed for up to 5 times in a page.
+The other selections have no limits.
+
 ### Configuration file
 
 Each collection of webforms is defined by a configuration file with
@@ -140,10 +155,17 @@ improved safety.
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
-files (indicated by `page`). Each file name must be prepended with
+files (indicated by `page` or `dood`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers.
 The page name for the index file must be set to `file` for correct syntax.
+
+Pages with type `dood` instead of `page` allow for user-dependant entries:
+Unless the user has editor permission or higher (see below for permissions),
+they can only access the page entry with an index field corresponding to
+their own user name. This can be used to let users submit entries from a
+given number of options.
+_(`dood` is derived from a popular web service for agreeing on a meeting ...)_
 
 List files used for populating selection fields are indicated by `list`
 followed by their reference name, file name, and optionally description.
@@ -184,6 +206,9 @@ If `admin` or `editor` lines contain the wildcard `*` then any user will get
 the corresponding permissions. The highest level available will be applied.
 E.g, an entry of `admin	*` will grant admin permissions to all users,
 even if they are listed in `editor` or `visitor` lines.
+
+User names are sanitized: only characters from the set '0-9A-Za-z.-' are
+allowed, and entries in the configuration file must conform to this.
 
 Logging can be switched on by setting the field `log` with page name 'file'
 and the file name. If the file is not writable, no logging will occur, without
