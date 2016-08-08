@@ -1,6 +1,7 @@
 #!/bin/sh
 # webforms.cgi (2016 Yargo Bonetti)
 # CGI script for handling flat file databases with common index/base
+info='webforms.cgi // 2016-08-08 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern for non-important files, as there
@@ -37,18 +38,15 @@ helpfile="./help.html"
 
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
 
-pjthome=http://gitlab.com/yargo/webforms
 
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
 
-This is $0
-which must be run as a CGI script, expecting input from POST or GET requests.
+$info
 
-See accompanying README file, or online repository at
-	$pjthome
-for further information.
+This is a CGI script, expecting input from POST or GET requests.
+See accompanying README file, or online repository for further information.
 
 EOT
 exit 9
@@ -181,7 +179,7 @@ footer(){
 cat <<EOH
 <hr />
 <p><small><i>
-processed by <a href="$pjthome">$myself</a>
+$info
  on <tt>`hostname`</tt>
  (`w|head -n 1`)
 </i></small></p>
