@@ -38,6 +38,9 @@ helpfile="./help.html"
 
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
 
+# generate random string for (we hope) nonexistent filename
+randstring=`uuidgen`
+randstring=${randstring:-.:X$$-84939878-6060-48f4-a00c-162570e03b42:}
 
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
@@ -202,12 +205,12 @@ EOH
 # get file name for arg.1=type, arg.2=page
 pagefile(){
 # get file name
- getlines $1 <"$cfg" | getlines $2 | { IFS="	" # TAB
+ getlines "$1" <"$cfg" | getlines $2 | { IFS="	" # TAB
   read pfile _
 # sanitize
   pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_/-'`
-# generate probably nonexistent file name, if empty (to later raise errors)
-  pfile=${pfile:-`uuidgen`}
+# generate nonexistent file name, if empty (to later raise errors)
+  pfile=${pfile:-$randstring}
 # don't change, if it starts with '/'
 # else prepend webform root directory
   case $pfile in
@@ -244,7 +247,8 @@ tablehead(){
  fi
  echo '<table><tr>'
 # get first line beginning with '*' ('[*]' for grep pattern),
-# and inject $idx after index (note <TAB>s in sed patterns)
+# and inject $idx after index (note <TAB>s in sed patterns),
+# and convert into list with each field on a separate line for `while read`
  getlines '[*]' <"$1" | head -n 1 | sed -e "s|	|	$idxf|" -e 's/	/\
 /g' | { while read field
   do
@@ -389,7 +393,7 @@ grepothers(){
 }
 
 # function for displaying index entries
-# maxindex must be initialised globally, as well as CGI variables db, pg, in
+# maxindex must be initialised globally, as well as CGI variables db and pg
 # arg.1,2 = additional tags for each index entry
 renderindices(){
  local pastind i ofs
@@ -564,6 +568,18 @@ vw=`inptvar vw '0-9A-Za-z'`
 
 ### now the real work!
 
+# get page file name, either normal or dood(le),
+# and set doodle flag for later
+pagef="`pagefile page $pg`"
+if test -r "$pagef"
+then doodle=no
+else pagef="`pagefile dood $pg`"
+ if test -r "$pagef"
+ then doodle=yes
+ else doodle=nil
+ fi
+fi
+
 # get view/command, and process info / render page
 vw=${vw:-default}
 cat <<EOH >>"$logfile"
@@ -579,10 +595,12 @@ case $vw in
   all) fa=all ; i='[+-]' ;;
   *) fa=shown ; i='[+]' ;;
   esac
-  header "$pg" "`pageinfo page $pg`" ""
-  pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
+   if test $doodle = yes
+   then header "$pg" "`pageinfo dood $pg`" ""
+   else header "$pg" "`pageinfo page $pg`" ""
+   fi
    cat <<EOH
 <p>select index name to modify entry, or
 <a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
@@ -652,7 +670,7 @@ EOH
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines page <"$cfg" | { IFS="	" # TAB
+  getlines 'page\|dood' <"$cfg" | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
@@ -789,7 +807,7 @@ EOH
 # get all pages for the current database
      getlines page <"$cfg" | { while read pname _
      do
-      pagef="`pagefile page $pname`"
+      pagef="`pagefile 'page\\|dood' $pname`"
       plock="`lockfile \"$pagef\"`"
       if test "$plock" != "" -a -r "$pagef" -a -w "$pagef"
       then cat <<EOH
@@ -824,7 +842,6 @@ EOH
   permwarn $permeditor
   maxflength=`getlines maxlength <"$cfg" | head -n 1`
   maxflength=${maxflength:-199}
-  pagef="`pagefile page $pg`"
   if test -r "$pagef"
   then
    cat <<EOH
@@ -882,7 +899,6 @@ EOH
 
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
-  pagef="`pagefile page $pg`"
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
   then cat <<EOH
