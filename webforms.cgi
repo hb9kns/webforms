@@ -206,11 +206,11 @@ pagefile(){
   read pf _
 # sanitize
   pf=`echo $pf | tr -c -d '0-9.A-Za-z_/-'`
-# don't change, if it starts with '/'
+# don't change, if it starts with '/' or is empty (i.e nothing found)
 # else prepend webform root directory
   case $pf in
    /*) echo "$pf" ;;
-   *) echo "$wdir/$pf"
+   ?*) echo "$wdir/$pf"
   esac
  }
 }
@@ -573,8 +573,8 @@ in=`inptvar in '0-9a-zA-Z-'`
 pg=`inptvar pg '.0-9a-zA-Z-'`
 vw=`inptvar vw '0-9A-Za-z'`
 
-# if page is missing, force listpages view
-if test "$pg" = ""
+# if page is missing, force listpages instead of page view
+if test "$pg" = "" -a "$vw" = "page"
 then vw=listpages
 fi
 
@@ -589,7 +589,7 @@ pagef="`pagefile page $pg`"
 usrpg=nil
 if test -r "$pagef"
 then usrpg=no
-else pagef="`pagefile user $pg`"
+else pagef="`pagefile upag $pg`"
  if test -r "$pagef"
  then usrpg=yes
 # for usrpg page, non-admin users can only see their own entries
@@ -617,7 +617,7 @@ case $vw in
   if test -r "$pagef"
   then
    if test $usrpg = yes
-   then header "$pg" "`pageinfo user $pg`" ""
+   then header "$pg" "`pageinfo upag $pg`" ""
    else header "$pg" "`pageinfo page $pg`" ""
    fi
    cat <<EOH
@@ -689,7 +689,7 @@ EOH
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines 'page\|user' <"$cfg" | { IFS="	" # TAB
+  getlines 'page\|upag' <"$cfg" | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
@@ -826,7 +826,7 @@ EOH
 # get all pages for the current database
      getlines page <"$cfg" | { while read pname _
      do
-      pagef="`pagefile 'page\\|user' $pname`"
+      pagef="`pagefile 'page\\|upag' $pname`"
       plock="`lockfile \"$pagef\"`"
       if test "$plock" != "" -a -r "$pagef" -a -w "$pagef"
       then cat <<EOH
