@@ -300,7 +300,8 @@ tableentry(){
 EOH
 # get contents of file with name from field where all up to '=' is removed,
 # only using lines beginning with '+'
-    cat "`pagefile list ${ffn#*=}`" | getlines '[+]' | { while read itm maxnum
+    cat "`pagefile list ${ffn#*=}`" | getlines '[+]' | { IFS="	"
+    while read itm maxnum
 # and generate options from file contents
 # (sanitizing of file contents not necessary, as done when entry is saved)
 # possibly preselecting option already present in database
