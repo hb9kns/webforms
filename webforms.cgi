@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2016-08-08 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2016-08-10 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern for non-important files, as there
