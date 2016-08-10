@@ -155,12 +155,12 @@ improved safety.
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
-files (indicated by `page` or `user`). Each file name must be prepended with
+files (indicated by `page` or `upag`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers.
 The page name for the index file must be set to `file` for correct syntax.
 
-Pages with type `user` instead of `page` allow for user-dependant entries:
+Pages with type `upag` instead of `page` allow for user-dependant entries:
 Unless the user has editor permission or higher (see below for permissions),
 they can only access page entries with an index field corresponding to
 their own user name. This can be used to let users submit entries from a
@@ -220,6 +220,8 @@ any error.
 	# base	file	relative/path/to/basefile.txt	basefile description
 	base	file	test.base	People
 	page	dates	test.dates	Dates
+	# in 'phone' page, users below admin level only see their own entries
+	upag	phone	test.phone	Phone numbers
 	list	color	test.color	favourite color
 	list	divis	test.div	company division
 	# uncomment to suppress displaying index/base field in page view
