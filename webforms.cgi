@@ -583,16 +583,16 @@ fi
 # additional filter depending on REMOTE_USER normally inactive (pass all)
 usrfilter='.*'
 
-# get page file name, either normal or dood(le),
-# and set doodle flag for later
+# get page file name, either normal or user based,
+# and set usrpg flag for later
 pagef="`pagefile page $pg`"
-doodle=nil
+usrpg=nil
 if test -r "$pagef"
-then doodle=no
-else pagef="`pagefile dood $pg`"
+then usrpg=no
+else pagef="`pagefile user $pg`"
  if test -r "$pagef"
- then doodle=yes
-# for doodle page, non-admin users can only see their own entries
+ then usrpg=yes
+# for usrpg page, non-admin users can only see their own entries
   if test $perms -lt $permadmin
   then usrfilter="$usr"
   fi
@@ -616,8 +616,8 @@ case $vw in
   esac
   if test -r "$pagef"
   then
-   if test $doodle = yes
-   then header "$pg" "`pageinfo dood $pg`" ""
+   if test $usrpg = yes
+   then header "$pg" "`pageinfo user $pg`" ""
    else header "$pg" "`pageinfo page $pg`" ""
    fi
    cat <<EOH
@@ -689,7 +689,7 @@ EOH
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines 'page\|dood' <"$cfg" | { IFS="	" # TAB
+  getlines 'page\|user' <"$cfg" | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
@@ -826,7 +826,7 @@ EOH
 # get all pages for the current database
      getlines page <"$cfg" | { while read pname _
      do
-      pagef="`pagefile 'page\\|dood' $pname`"
+      pagef="`pagefile 'page\\|user' $pname`"
       plock="`lockfile \"$pagef\"`"
       if test "$plock" != "" -a -r "$pagef" -a -w "$pagef"
       then cat <<EOH
@@ -861,8 +861,8 @@ EOH
   permwarn $permeditor
   maxflength=`getlines maxlength <"$cfg" | head -n 1`
   maxflength=${maxflength:-999}
-# make sure in case of dood page, only permitted user name is passed
-  if test $doodle = yes -a "$usrfilter" != '.*'
+# make sure in case of user page, only permitted user name is passed
+  if test $usrpg = yes -a "$usrfilter" != '.*'
   then in="$usr"
   fi
   if test -r "$pagef"
@@ -874,7 +874,7 @@ EOH
    tablehead "$pagef" 0
 # get number of rendered header fields reported by 'tablehead'
    totalcols=$?
-   case $doodle in
+   case $usrpg in
    no) # in case of normal page
 # add empty option value (to fail if nothing selected)
    cat <<EOH
@@ -903,7 +903,7 @@ EOH
  </select></td>
 EOH
    ;;
-   yes) # in case of dood page
+   yes) # in case of user page
     cat <<EOH
  <tr><td>
  <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
@@ -933,8 +933,8 @@ EOH
 
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
-# make sure in case of dood page, only permitted user name is passed
-  if test $doodle = yes -a "$usrfilter" != '.*'
+# make sure in case of user page, only permitted user name is passed
+  if test $usrpg = yes -a "$usrfilter" != '.*'
   then in="$usr"
   fi
   inlock="`lockfile \"$pagef\"`"

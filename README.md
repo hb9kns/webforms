@@ -155,17 +155,16 @@ improved safety.
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
-files (indicated by `page` or `dood`). Each file name must be prepended with
+files (indicated by `page` or `user`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers.
 The page name for the index file must be set to `file` for correct syntax.
 
-Pages with type `dood` instead of `page` allow for user-dependant entries:
+Pages with type `user` instead of `page` allow for user-dependant entries:
 Unless the user has editor permission or higher (see below for permissions),
-they can only access the page entry with an index field corresponding to
+they can only access page entries with an index field corresponding to
 their own user name. This can be used to let users submit entries from a
-given number of options.
-_(`dood` is derived from a popular web service for agreeing on a meeting ...)_
+given number of options, or handle their self-supplied data.
 
 List files used for populating selection fields are indicated by `list`
 followed by their reference name, file name, and optionally description.
