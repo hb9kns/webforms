@@ -38,10 +38,6 @@ helpfile="./help.html"
 
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
 
-# generate random string for (we hope) nonexistent filename
-randstring=`uuidgen`
-randstring=${randstring:-.:X$$-84939878-6060-48f4-a00c-162570e03b42:}
-
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
 then cat <<EOT
@@ -204,18 +200,17 @@ EOH
 # both following functions only process first ocurrence of page
 # get file name for arg.1=type, arg.2=page
 pagefile(){
+ local pf
 # get file name
  getlines "$1" <"$cfg" | getlines $2 | { IFS="	" # TAB
-  read pfile _
+  read pf _
 # sanitize
-  pfile=`echo $pfile | tr -c -d '0-9.A-Za-z_/-'`
-# generate nonexistent file name, if empty (to later raise errors)
-  pfile=${pfile:-$randstring}
+  pf=`echo $pf | tr -c -d '0-9.A-Za-z_/-'`
 # don't change, if it starts with '/'
 # else prepend webform root directory
-  case $pfile in
-   /*) echo "$pfile" ;;
-   *) echo "$wdir/$pfile"
+  case $pf in
+   /*) echo "$pf" ;;
+   *) echo "$wdir/$pf"
   esac
  }
 }
@@ -577,6 +572,11 @@ esac
 in=`inptvar in '0-9a-zA-Z-'`
 pg=`inptvar pg '.0-9a-zA-Z-'`
 vw=`inptvar vw '0-9A-Za-z'`
+
+# if page is missing, force listpages view
+if test "$pg" = ""
+then vw=listpages
+fi
 
 ### now the real work!
 
