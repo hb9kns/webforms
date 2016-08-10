@@ -1,2 +1,0 @@
-# ToDo list for development
-
