@@ -1,11 +1,11 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2016-08-10 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2017-03-20 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern for non-important files, as there
 # will be an 'rm -f $tmpr*' command at the end of the script!)
-# if `$TMP` contains whitespace or other crap, hell may break loose
+# if `$TMP` contains whitespace or other crap, anything might happen!
 tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
@@ -17,7 +17,7 @@ dobackup(){
  #git add "$1" && git commit -m "$dmesg"
 ## rcs version
  #ci -l -w"$usr" -m"$dmesg" "$1"
-## poor man's version -- if commenting, do all lines of <<HERE document!
+## poor man's version -- if commenting, do all lines of <<EOH document!
  cat <<EOH >>"$1.diff"
 
 ## `date '+%y-%m-%d,%H:%M'` : $dmesg
@@ -25,15 +25,15 @@ EOH
 # ed-like inverse (new to old) diff: short, and can be more easily replayed
  diff -e "$1" "$1.old" >>"$1.diff"
  cat "$1" > "$1.old"
-# make sure backup files cannot be read by all
+# make sure backup files cannot be read by others/all
  chmod o-rwx "$1.old" "$1.diff"
 }
 
 # default permitted characters in record fields: SPC and printable ASCII
-# as 'tr' pattern
+# will be used as 'tr' pattern
 defaultfieldchars=' -~'
 
-# help file for linking (may also be nonexistent and will then be ignored)
+# help file for linking (may also be nonexistent, then ignored)
 helpfile="./help.html"
 
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
@@ -60,10 +60,11 @@ inpt=$tmpr.inp
 # and showindex filtered index
 tmpi=$tmpr.idx
 
+# slurp stdin and QUERY_STRING
 cat >$tmpf
 echo "$QUERY_STRING" >>$tmpf
 
-# save STDIN (POST input) in decoded form:
+# save slurped input in decoded form:
 # first translate '+' into SPC and ';&' (separators) into new lines
 # (note: after the last "'" there is a SPC!)
 # then permitted escaped characters (restricted for security reasons)
@@ -75,7 +76,7 @@ cat $tmpf | tr '+;&' '
  s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;s/%40/@/g;
  s/%25/%/g" >$inpt
 
-### now some functions!
+### first define some functions
 
 # end script after cleanup with exit code as arg.1
 finish(){
@@ -121,13 +122,13 @@ inptvar(){
 getlines(){
  sed -e 's/$/	/' | grep "^$1[	]" | { IFS="	" # record separator TAB only
  while read _ values
-# again remove added TAB
+# remove trailing added TAB
  do echo "${values%	}"
  done
  }
 }
 
-# check whether entry is present on some line
+# check whether entry arg.2 is present on some line beginning with arg.1
 checkline(){
 local entry found
 entry="$2"
@@ -184,7 +185,7 @@ running on <tt>`hostname`</tt>
 </i></small></p>
 <pre>
 EOH
-# cat $inpt # for debugging
+# cat $inpt # uncomment for debugging
 cat <<EOH
 </pre>
 </body>
@@ -226,6 +227,7 @@ pageinfo(){
 # print HTML table head for arg.1=file, arg.2=start column,
 #  if arg.3=showindex then also field names from config var 'showindex'
 # exit code = number of rendered columns
+# sc and sd are global variables!
 tablehead(){
  local skip nc nd idxf ffn
  skip=${2:-0}
@@ -242,20 +244,20 @@ tablehead(){
  fi
  echo '<table><tr>'
 # get first line beginning with '*' ('[*]' for grep pattern),
-# and inject $idx after index (note <TAB>s in sed patterns),
+# and inject $idxf after index (note <TAB>s in sed patterns),
 # and convert into list with each field on a separate line for `while read`
  getlines '[*]' <"$1" | head -n 1 | sed -e "s|	|	$idxf|" -e 's/	/\
 /g' | { while read field
   do
 # for column selected for sorting, invert next sort order
    if test $nc = $sc
-   then nd=`expr 1 - $sd`
+   then nd=$(( 1-$sd ))
    else nd=$sd
    fi
 # now render column titles with sort links:
 # skip start columns
    if test $skip -gt 0
-   then skip=`expr $skip - 1`
+   then skip=$(( $skip-1 ))
 # report field numbers and names to caller
    else echo $nc:$field >>$tmpf
 # if list field, get file name for list file,
@@ -269,7 +271,7 @@ tablehead(){
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
 EOH
    fi
-   nc=`expr $nc + 1`
+   nc=$(( $nc+1 ))
   done
  }
  echo '</tr>'
@@ -283,7 +285,7 @@ tableentry(){
  local en fn ffn af
  fn=${1:-1}
 # form entry number
- en=`expr $fn - 1`
+ en=$(( $fn-1 ))
  af=autofocus # for first field
 # loop for all necessary input fields
  while test $fn -le $totalcols
@@ -336,8 +338,8 @@ EOH
    ;;
   esac
   echo '  </td>'
-  en=`expr $en + 1`
-  fn=`expr $fn + 1`
+  en=$(( $en+1 ))
+  fn=$(( $fn+1 ))
   af=''
  done
 }
@@ -349,11 +351,11 @@ lockfile(){
  local lf lc lt
  lc=9 # timeout counter
 # delay, somewhat random per instance
- lt=`expr $$ % 3 + 1`
+ lt=$(( $$%3+1 ))
  lf="$1.lock"
 # while file already present, and not yet timeout
  while test -f "$lf" -a $lc -gt 0
- do lc=`expr $lc - 1`
+ do lc=$(( $lc-1 ))
   sleep $lt
  done
  if test -f "$lf"
@@ -418,11 +420,11 @@ EOH
   echo '</tr>'
 # convert last index to numeric value and increment,
 # or set to counter value, if non-numeric
-  pastind=`expr $in + 1` ; pastind=${pastind:-$i}
+  pastind=$(( $in+1 )) ; pastind=${pastind:-$i}
   if test $maxindex -lt $pastind
   then maxindex=$pastind
   fi
-  i=`expr $i + 1`
+  i=$(( $i+1 ))
  done
 # report outside
  echo $maxindex >$tmpf
@@ -456,7 +458,7 @@ showindexrepl(){
  do case $1 in
   -) : ;; # NO-OP
   *) out="$out	:$cnt"
-     cnt=`expr $cnt + 1`
+     cnt=$(( $cnt+1 ))
    ;;
   esac
   shift
@@ -654,7 +656,7 @@ EOH
     while read in f1 desc
 # create link to edit view
     do
-     count=`expr $count + 1`
+     count=$(( $count+1 ))
      if test $nopageindex = 1
 # use first field as link text
      then cat <<EOH
@@ -717,7 +719,7 @@ EOH
   getlines '[-]' <"$idx" | fieldsort | renderindices '<strike>' '</strike>'
   maxindex=`head -n 1 $tmpf`
   maxindex=${maxindex:-0}
-  maxindex=`expr $maxindex + 1`
+  maxindex=$(( $maxindex+1 ))
   cat <<EOH
 </table>
 <p>create
@@ -794,7 +796,7 @@ EOH
     nf="`inptvar f$i \"$fieldchars\"`"
 # separate fields by TAB, replace empty fields by SPC
     newline="$newline	${nf:- }"
-    i=`expr $i + 1`
+    i=$(( $i+1 ))
    done
    echo "$newline" >>$tmpf
 # report new/modified entry
@@ -964,7 +966,7 @@ EOH
 # separate fields by TAB, replace empty fields by SPC
     nf="`inptvar f$i \"$fieldchars\"`"
     newline="$newline	${nf:- }"
-    i=`expr $i + 1`
+    i=$(( $i+1 ))
    done
    echo "$newline" >>$tmpf
 # report last line, i.e saved entry
