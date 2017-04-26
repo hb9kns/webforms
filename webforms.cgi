@@ -598,20 +598,25 @@ fi
 
 # additional filter depending on REMOTE_USER normally inactive (pass all)
 usrfilter='.*'
-
-# get page file name, either normal or user based,
-# and set ptype flag for later
-pagef="`pagefile page $pg`"
 ptype=nil
+
+# get page file name, and set ptype flag for later
+pagef="`pagefile page $pg`"
 if test -r "$pagef"
 then ptype=norm
-else pagef="`pagefile upag $pg`"
+else
+# check for non-norm page
+ pagef="`pagefile upag $pg`"
  if test -r "$pagef"
  then ptype=user
-# for usrpg page, non-admin users can only see their own entries
-  if test $perms -lt $permadmin
-  then usrfilter="$usr"
-  fi
+ fi
+ pagef="`pagefile ulog $pg`"
+ if test -r "$pagef"
+ then ptype=ulog
+ fi
+# for such pages, non-admin users can only see their own entries
+ if test $perms -lt $permadmin
+ then usrfilter="$usr"
  fi
 fi
 
@@ -632,10 +637,11 @@ case $vw in
   esac
   if test -r "$pagef"
   then
-   if test $ptype = user
-   then header "$pg" "`pageinfo upag $pg`" ""
-   else header "$pg" "`pageinfo page $pg`" ""
-   fi
+   case $ptype in
+   user) header "$pg" "`pageinfo upag $pg`" "" ;;
+   ulog) header "$pg" "`pageinfo ulog $pg`" "" ;;
+   *) header "$pg" "`pageinfo page $pg`" "" ;;
+   esac
    cat <<EOH
 <p>select index name to modify entry, or
 <a href="$myself?db=$db&pg=$pg&in=&vw=editentry">create new entry</a></p>
@@ -705,7 +711,7 @@ EOH
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines 'page\|upag' <"$cfg" | { IFS="	" # TAB
+  getlines 'page\|upag\|ulog' <"$cfg" | { IFS="	" # TAB
    while read name file desc
    do cat <<EOH
 <tr>
@@ -842,7 +848,7 @@ EOH
 # get all pages for the current database
      getlines page <"$cfg" | { while read pname _
      do
-      pagef="`pagefile 'page\\|upag' $pname`"
+      pagef="`pagefile 'page\\|upag\\|ulog' $pname`"
       plock="`lockfile \"$pagef\"`"
       if test "$plock" != "" -a -r "$pagef" -a -w "$pagef"
       then cat <<EOH
@@ -877,9 +883,13 @@ EOH
   permwarn $permeditor
   maxflength=`getlines maxlength <"$cfg" | head -n 1`
   maxflength=${maxflength:-999}
-# make sure in case of user page, only permitted user name is passed
-  if test $ptype = user -a "$usrfilter" != '.*'
-  then in="$usr"
+# make sure in case of user/ulog pages, only permitted user name is passed
+  if test "$usrfilter" != '.*'
+  then case $ptype in
+   user) in="$usr" ;;
+# for ulog page, keep time stamp if present
+   ulog) in="$usr/${in##*/}" ;;
+   esac
   fi
   if test -r "$pagef"
   then
@@ -926,6 +936,16 @@ EOH
  </td>
 EOH
    ;;
+   ulog) # in case of ulog page, add timestamp if missing
+    if test "$in" = "" -o "$in" = "$usr"
+    then in="$usr/`nowstring`"
+    fi
+    cat <<EOH
+ <tr><td>
+ <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
+ </td>
+EOH
+   ;;
    esac
 # read record fields of current index, split onto separate lines, and
 # generate table entry, starting at field 2 (after index)
@@ -949,9 +969,13 @@ EOH
 
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
-# make sure in case of user page, only permitted user name is passed
-  if test $ptype = user -a "$usrfilter" != '.*'
-  then in="$usr"
+# make sure in case of user/ulog pages, only permitted user name is passed
+  if test "$usrfilter" != '.*'
+  then case $ptype in
+   user) in="$usr" ;;
+# for ulog page, keep time stamp if present
+   ulog) in="$usr/${in##*/}" ;;
+   esac
   fi
   inlock="`lockfile \"$pagef\"`"
   if test "$inlock" = "" -o ! -r "$pagef" -o ! -f "$pagef"
