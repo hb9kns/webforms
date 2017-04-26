@@ -3,10 +3,13 @@
 info='webforms.cgi // 2017-03-20 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
-# (make sure this is a pattern for non-important files, as there
-# will be an 'rm -f $tmpr*' command at the end of the script!)
+# (make sure this is a pattern only for temporary files, because
+# there is an 'rm -f $tmpr*' command at the end of the script!)
 # if `$TMP` contains whitespace or other crap, anything might happen!
 tmpr=${TMP:-/tmp}/webform-$user-tmp$$
+
+# generate standard string for time stamp, suitable as index
+nowstring(){ date '+%y-%m-%d,%H:%M' ; }
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
 # (user name and REMOTE_ADDR will be added to the remarks)
@@ -20,7 +23,7 @@ dobackup(){
 ## poor man's version -- if commenting, do all lines of <<EOH document!
  cat <<EOH >>"$1.diff"
 
-## `date '+%y-%m-%d,%H:%M'` : $dmesg
+## `nowstring` : $dmesg
 EOH
 # ed-like inverse (new to old) diff: short, and can be more easily replayed
  diff -e "$1" "$1.old" >>"$1.diff"
@@ -266,6 +269,7 @@ tablehead(){
 # and use entry in first line beginning with '*'
       field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
+     auto=now) field='date,time' ;;
     esac
     cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
@@ -297,7 +301,7 @@ tableentry(){
   case ${ffn#*:} in
 # if field name is reference to list file ..
 # start selection field
-   list=*) cat <<EOH
+  list=*) cat <<EOH
   <select name="f$en">
 EOH
 # get contents of file with name from field where all up to '=' is removed,
@@ -330,6 +334,15 @@ EOF
 # end of selection field
    echo '   </select>'
    }
+   ;;
+  auto=now)
+# for "now" timestamp field, offer old and current value
+   cat <<EOH
+  <select name="f$en">
+   <option value="$field" selected>$field</option>
+   <option value="`nowstring`">`nowstring`</option>
+  </select>'
+EOF
    ;;
 # .. else populate with current values (or empty, if nothing read)
   *) cat <<EOH
@@ -587,14 +600,14 @@ fi
 usrfilter='.*'
 
 # get page file name, either normal or user based,
-# and set usrpg flag for later
+# and set ptype flag for later
 pagef="`pagefile page $pg`"
-usrpg=nil
+ptype=nil
 if test -r "$pagef"
-then usrpg=no
+then ptype=norm
 else pagef="`pagefile upag $pg`"
  if test -r "$pagef"
- then usrpg=yes
+ then ptype=user
 # for usrpg page, non-admin users can only see their own entries
   if test $perms -lt $permadmin
   then usrfilter="$usr"
@@ -605,7 +618,7 @@ fi
 # get view/command, and process info / render page
 vw=${vw:-default}
 cat <<EOH >>"$logfile"
-`date +%y-%m-%d,%H:%M:%S` db=$db vw=$vw pg=$pg in=$in usr=$usr/$perms remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
+`date -u +%y-%m-%d,%H:%M:%S` db=$db vw=$vw pg=$pg in=$in usr=$usr/$perms remote=$REMOTE_ADDR:$REMOTE_PORT # $REMOTE_HOST
 EOH
 case $vw in
 
@@ -619,7 +632,7 @@ case $vw in
   esac
   if test -r "$pagef"
   then
-   if test $usrpg = yes
+   if test $ptype = user
    then header "$pg" "`pageinfo upag $pg`" ""
    else header "$pg" "`pageinfo page $pg`" ""
    fi
@@ -865,7 +878,7 @@ EOH
   maxflength=`getlines maxlength <"$cfg" | head -n 1`
   maxflength=${maxflength:-999}
 # make sure in case of user page, only permitted user name is passed
-  if test $usrpg = yes -a "$usrfilter" != '.*'
+  if test $ptype = user -a "$usrfilter" != '.*'
   then in="$usr"
   fi
   if test -r "$pagef"
@@ -877,8 +890,8 @@ EOH
    tablehead "$pagef" 0
 # get number of rendered header fields reported by 'tablehead'
    totalcols=$?
-   case $usrpg in
-   no) # in case of normal page
+   case $ptype in
+   norm) # in case of normal page
 # add empty option value (to fail if nothing selected)
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
@@ -906,7 +919,7 @@ EOH
  </select></td>
 EOH
    ;;
-   yes) # in case of user page
+   user) # in case of user page
     cat <<EOH
  <tr><td>
  <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
@@ -937,7 +950,7 @@ EOH
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
 # make sure in case of user page, only permitted user name is passed
-  if test $usrpg = yes -a "$usrfilter" != '.*'
+  if test $ptype = user -a "$usrfilter" != '.*'
   then in="$usr"
   fi
   inlock="`lockfile \"$pagef\"`"
