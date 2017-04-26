@@ -341,8 +341,8 @@ EOF
   <select name="f$en">
    <option value="$field" selected>$field</option>
    <option value="`nowstring`">`nowstring`</option>
-  </select>'
-EOF
+  </select>
+EOH
    ;;
 # .. else populate with current values (or empty, if nothing read)
   *) cat <<EOH
