@@ -682,16 +682,20 @@ EOH
 # create link to edit view
     do
      count=$(( $count+1 ))
+     case $ptype in
+     ulog) din=${in%_*} ;;
+     *) din=$in ;;
+     esac
      if test $nopageindex = 1
 # use first field as link text
      then cat <<EOH
 <tr>
-<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$f1</a>(<a href="$myself?db=$db&pg=$pg&in=$din&vw=descindex">?</a>)</td>
 EOH
 # use index field, and also show first field (possibly with warning)
      else sed -e "s|<td> *</td>|<td>$emptywarn</td>|g" <<EOH
 <tr>
-<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>(<a href="$myself?db=$db&pg=$pg&in=$in&vw=descindex">?</a>)</td>
+<td><a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">$in</a>(<a href="$myself?db=$db&pg=$pg&in=$din&vw=descindex">?</a>)</td>
 <td>$f1</td>
 EOH
      fi
