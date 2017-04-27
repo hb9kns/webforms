@@ -339,12 +339,7 @@ EOF
    ;;
   now=*)
 # for "now" timestamp field, offer old and current value
-# (use epoch minutes internally)
-   if test "$field" = ""
-# (or current value, if empty)
-   then field="$nowstring=$nowminutes"
-   fi
-# remove epoch minutes in selection
+# (use epoch minutes internally, but remove for selection tag)
    cat <<EOH
   <select name="f$en">
    <option value="$field" selected>${field%=*}</option>
