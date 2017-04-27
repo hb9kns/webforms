@@ -269,7 +269,7 @@ tablehead(){
 # and use entry in first line beginning with '*'
       field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
-     auto=now) field='date,time' ;;
+     now=*) field=${field##*=} ;;
     esac
     cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
@@ -335,8 +335,12 @@ EOF
    echo '   </select>'
    }
    ;;
-  auto=now)
+  now=*)
 # for "now" timestamp field, offer old and current value
+   if test "$field" = ""
+# (or current value, if empty)
+   then field=`nowstring`
+   fi
    cat <<EOH
   <select name="f$en">
    <option value="$field" selected>$field</option>
@@ -585,7 +589,7 @@ case $sd in
 esac
 
 # get and sanitize values
-in=`inptvar in '0-9a-zA-Z-'`
+in=`inptvar in '0-9a-zA-Z_-'`
 pg=`inptvar pg '.0-9a-zA-Z-'`
 vw=`inptvar vw '0-9A-Za-z'`
 
@@ -936,9 +940,9 @@ EOH
  </td>
 EOH
    ;;
-   ulog) # in case of ulog page, add timestamp if missing
+   ulog) # in case of ulog page, add number-only timestamp if missing
     if test "$in" = "" -o "$in" = "$usr"
-    then in="$usr/`nowstring`"
+    then in="${usr}_`nowstring|tr -c -d '0-9'`"
     fi
     cat <<EOH
  <tr><td>
