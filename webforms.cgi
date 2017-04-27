@@ -173,7 +173,7 @@ cat <<EOH
 <h1>$2</h1>
 EOH
 # uncomment during maintenance
- echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
+# echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
 echo "<p>$3</p>"
 }
 
@@ -640,7 +640,7 @@ case $vw in
   if test -r "$pagef"
   then
    case $ptype in
-   page|upag|ulog) header "$pg" "`pageinfo $ptype $pg`" "$ptype" ;;
+   page|upag|ulog) header "$pg" "`pageinfo $ptype $pg`" "" ;;
    *) header "ERROR" "unknown pagetype" "internal error"
     fatal "cannot handle pagetype $ptype!" ;;
    esac
