@@ -644,7 +644,10 @@ case $vw in
   if test -r "$pagef"
   then
    case $ptype in
-   page|upag|ulog) header "$pg" "`pageinfo $ptype $pg`" "" ;;
+   page|ulog) header "$pg" "`pageinfo $ptype $pg`" ""
+# display all entries
+    usrfilter='.*' ;;
+   upag) header "$pg" "`pageinfo $ptype $pg`" "<em>user filtered</em>" ;;
    *) header "ERROR" "unknown pagetype" "internal error"
     fatal "cannot handle pagetype $ptype!" ;;
    esac
@@ -682,6 +685,7 @@ EOH
 # create link to edit view
     do
      count=$(( $count+1 ))
+# link to user (without timestamp) for ulog page
      case $ptype in
      ulog) din=${in%_*} ;;
      *) din=$in ;;
@@ -900,7 +904,10 @@ EOH
   then case $ptype in
    upag) in="$usr" ;;
 # for ulog page, keep time stamp if present
-   ulog) in="$usr/${in##*/}" ;;
+   ulog) if test "$in" = ""
+    then in=$usr
+    else in="${usr}_${in#*_}"
+    fi ;;
    esac
   fi
   if test -r "$pagef"
@@ -986,7 +993,7 @@ EOH
   then case $ptype in
    upag) in="$usr" ;;
 # for ulog page, keep time stamp if present
-   ulog) in="$usr/${in##*/}" ;;
+   ulog) in="${usr}_${in#*_}" ;;
    esac
   fi
   inlock="`lockfile \"$pagef\"`"
