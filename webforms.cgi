@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2017-03-20 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2017-04-27 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -173,7 +173,7 @@ cat <<EOH
 <h1>$2</h1>
 EOH
 # uncomment during maintenance
-# echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
+ echo '<p><center><font color="red"><h1>MAINTENANCE, DO NOT USE!</h1></font></center></p>'
 echo "<p>$3</p>"
 }
 
@@ -601,24 +601,22 @@ usrfilter='.*'
 ptype=nil
 
 # get page file name, and set ptype flag for later
-pagef="`pagefile page $pg`"
-if test -r "$pagef"
-then ptype=norm
-else
-# check for non-norm page
- pagef="`pagefile upag $pg`"
+for pft in page upag ulog
+do pagef="`pagefile $pft $pg`"
  if test -r "$pagef"
- then ptype=user
+ then ptype=$pft
+  break
  fi
- pagef="`pagefile ulog $pg`"
- if test -r "$pagef"
- then ptype=ulog
- fi
-# for such pages, non-admin users can only see their own entries
+done
+
+# for user type pages and non-admins, only allow user name from environment
+case $ptype in
+upag|ulog)
  if test $perms -lt $permadmin
  then usrfilter="$usr"
  fi
-fi
+ ;;
+esac
 
 # get view/command, and process info / render page
 vw=${vw:-default}
@@ -638,9 +636,9 @@ case $vw in
   if test -r "$pagef"
   then
    case $ptype in
-   user) header "$pg" "`pageinfo upag $pg`" "" ;;
-   ulog) header "$pg" "`pageinfo ulog $pg`" "" ;;
-   *) header "$pg" "`pageinfo page $pg`" "" ;;
+   page|upag|ulog) header "$pg" "`pageinfo $ptype $pg`" "$ptype" ;;
+   *) header "ERROR" "unknown pagetype" "internal error"
+    fatal "cannot handle pagetype $ptype!" ;;
    esac
    cat <<EOH
 <p>select index name to modify entry, or
@@ -702,8 +700,10 @@ EOH
 currently $fa $count</i></p>
 EOH
     }
-  else cat <<EOH
-<p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
+  else
+   header "$pg" "`pageinfo $ptype $pg`" "<em>ERROR</em>"
+   cat <<EOH
+<p>Sorry, but page "$pg" of type "$ptype" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
   fi
   footer ;; # page.
@@ -886,7 +886,7 @@ EOH
 # make sure in case of user/ulog pages, only permitted user name is passed
   if test "$usrfilter" != '.*'
   then case $ptype in
-   user) in="$usr" ;;
+   upag) in="$usr" ;;
 # for ulog page, keep time stamp if present
    ulog) in="$usr/${in##*/}" ;;
    esac
@@ -901,7 +901,7 @@ EOH
 # get number of rendered header fields reported by 'tablehead'
    totalcols=$?
    case $ptype in
-   norm) # in case of normal page
+   page) # in case of normal page
 # add empty option value (to fail if nothing selected)
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
@@ -929,7 +929,7 @@ EOH
  </select></td>
 EOH
    ;;
-   user) # in case of user page
+   upag) # in case of user page
     cat <<EOH
  <tr><td>
  <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
@@ -972,7 +972,7 @@ EOH
 # make sure in case of user/ulog pages, only permitted user name is passed
   if test "$usrfilter" != '.*'
   then case $ptype in
-   user) in="$usr" ;;
+   upag) in="$usr" ;;
 # for ulog page, keep time stamp if present
    ulog) in="$usr/${in##*/}" ;;
    esac
