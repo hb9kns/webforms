@@ -8,8 +8,10 @@ info='webforms.cgi // 2017-04-27 Y.Bonetti // http://gitlab.com/yargo/webforms'
 # if `$TMP` contains whitespace or other crap, anything might happen!
 tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 
-# generate standard string for time stamp, suitable as index
-nowstring(){ date '+%y-%m-%d,%H:%M' ; }
+# generate string for time stamp, suitable as index
+nowstring=`date '+%y-%m-%d,%H:%M'`
+# same, but as epoch minutes
+nowminutes=$(( `date -u +%s`/60 ))
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
 # (user name and REMOTE_ADDR will be added to the remarks)
@@ -23,7 +25,7 @@ dobackup(){
 ## poor man's version -- if commenting, do all lines of <<EOH document!
  cat <<EOH >>"$1.diff"
 
-## `nowstring` : $dmesg
+## $nowstring : $dmesg
 EOH
 # ed-like inverse (new to old) diff: short, and can be more easily replayed
  diff -e "$1" "$1.old" >>"$1.diff"
@@ -337,14 +339,16 @@ EOF
    ;;
   now=*)
 # for "now" timestamp field, offer old and current value
+# (use epoch minutes internally)
    if test "$field" = ""
 # (or current value, if empty)
-   then field=`nowstring`
+   then field="$nowstring=$nowminutes"
    fi
+# remove epoch minutes in selection
    cat <<EOH
   <select name="f$en">
-   <option value="$field" selected>$field</option>
-   <option value="`nowstring`">`nowstring`</option>
+   <option value="$field" selected>${field%=*}</option>
+   <option value="$nowstring=$nowminutes">$nowstring</option>
   </select>
 EOH
    ;;
@@ -942,7 +946,7 @@ EOH
    ;;
    ulog) # in case of ulog page, add number-only timestamp if missing
     if test "$in" = "" -o "$in" = "$usr"
-    then in="${usr}_`nowstring|tr -c -d '0-9'`"
+    then in="${usr}_`echo $nowstring|tr -c -d '0-9'`"
     fi
     cat <<EOH
  <tr><td>
