@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2017-04-27 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2017-04-28 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -756,7 +756,6 @@ EOH
   getlines '[-]' <"$idx" | fieldsort | renderindices '<strike>' '</strike>'
   maxindex=`head -n 1 $tmpf`
   maxindex=${maxindex:-0}
-  maxindex=$(( $maxindex+1 ))
   cat <<EOH
 </table>
 <p>create
