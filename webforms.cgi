@@ -434,9 +434,16 @@ EOH
 # split description into table fields
   echo "<td>$desc</td>" | sed -e 's:	:</td><td>:g'
   echo '</tr>'
-# convert last index to numeric value and increment,
-# or set to counter value, if non-numeric
-  pastind=$(( $in+1 )) ; pastind=${pastind:-$i}
+# create temporary last index containing nothing but numbers
+  pastind=`echo "$in" | tr -c -d '0-9'`
+# if same as original, convert to numeric value and increment,
+  if test "$pastind" = "$in"
+  then pastind=$(( $in+1 ))
+# ignore otherwise
+  else pastind=''
+  fi
+# and set to counter value, if non-numeric
+  pastind=${pastind:-$i}
   if test $maxindex -lt $pastind
   then maxindex=$pastind
   fi
@@ -640,7 +647,7 @@ case $vw in
   then
    case $ptype in
    page|ulog) header "$pg" "`pageinfo $ptype $pg`" ""
-# display all entries
+# display all entries in case of page and ulog pages
     usrfilter='.*' ;;
    upag) header "$pg" "`pageinfo $ptype $pg`" "<em>user filtered</em>" ;;
    *) header "ERROR" "unknown pagetype" "internal error"
@@ -669,7 +676,7 @@ EOH
     else IFS="	" # TAB
      while read in rem
 # else insert showindex fields after index
-     do ins=`getlines $in <$tmpi | head -n 1`
+     do ins=`getlines "$in" <$tmpi | head -n 1`
       echo "$in	$ins	$rem"
      done
     fi
@@ -682,8 +689,8 @@ EOH
      count=$(( $count+1 ))
 # link to user (without timestamp) for ulog page
      case $ptype in
-     ulog) din=${in%_*} ;;
-     *) din=$in ;;
+     ulog) din="${in%_*}" ;;
+     *) din="$in" ;;
      esac
      if test $nopageindex = 1
 # use first field as link text
@@ -761,7 +768,7 @@ EOH
  descindex)
   header "index/base $in" 'Index/base description' "Values associated with index <tt>$in</tt>"
   echo '<pre>'
-  getlines '[+-]' <"$idx" | getlines $in
+  getlines '[+-]' <"$idx" | getlines "$in"
   echo '</pre>'
   cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">EDIT</a></p>
@@ -783,7 +790,7 @@ EOH
 EOH
 # get selected index (but only the first one) and add entry line,
 # starting at field 2 (after index)
-  getlines '[+-]' <"$idx" | getlines $in | head -n 1 | sed -e 's:	:\
+  getlines '[+-]' <"$idx" | getlines "$in" | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | tableentry 2
   echo ' </tr>'
   tablefoot
@@ -813,7 +820,7 @@ EOH
    tablehead "$idx" 0
    totalcols=$?
 # copy everything not containing selected index
-   grepothers $in <"$idx" >$tmpf
+   grepothers "$in" <"$idx" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
    then newline="+	$in"
@@ -866,7 +873,7 @@ EOH
 <li><tt>$pname</tt></li>
 EOH
 # copy everything not containing selected index
-       grepothers $in <"$pagef" >$tmpf
+       grepothers "$in" <"$pagef" >$tmpf
 # replace flag for selected index, with limiting TAB added/removed
        sed -e 's/$/	/' <"$pagef" | grep "^[+-][ 	]$in	" |
         sed -e "s|.	|$flg	|;s|	$||" >>$tmpf
@@ -963,7 +970,7 @@ EOH
    esac
 # read record fields of current index, split onto separate lines, and
 # generate table entry, starting at field 2 (after index)
-   getlines '[+-]' <"$pagef" | getlines $in | head -n 1 | sed -e 's:	:\
+   getlines '[+-]' <"$pagef" | getlines "$in" | head -n 1 | sed -e 's:	:\
 :g;s/"/\\"/g' | tableentry 2
    echo ' </tr>'
    tablefoot
@@ -1004,7 +1011,7 @@ EOH
   tablehead "$pagef" 0
   totalcols=$?
 # copy everything not containing selected index
-   grepothers $in <"$pagef" >$tmpf
+   grepothers "$in" <"$pagef" >$tmpf
 # show/hide?
    if test "`inptvar fa`" = "show"
    then newline="+	$in"
