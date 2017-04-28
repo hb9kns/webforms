@@ -92,6 +92,14 @@ all lines of the file `listname` beginning with '+' (only the part after
 TAB is used). This allows to predefine a limited number of possible
 entries for certain fields.
 
+Header fields with the structure `now=description` or `day=description`
+will result in the corresponding field being a selection field, with
+options empty, old value, or current time (in minute resolution, for
+`now=` header) or day (for `day=` header). In case of `now=` fields,
+the time will be followed by `=NNNN` where `NNNN` is the epoch time
+(in general since Jan.1st 1970 UTC) in minutes; this can be used for
+logbook applications to calculate time differences.
+
 Page entries with leading `-` normally are not displayed when the
 page is rendered, but they can be "un-hidden," and also be edited.
 
@@ -117,7 +125,7 @@ _Please note the TAB characters always separating fields!_
 #### example record file
 
 	# entrance and leave database
-	*	PersNr	Arrival date	Departure date	list=divis
+	*	PersNr	day=Arrival date	day=Departure date	list=divis
 	+	1008	sooner	later	HR
 	+	1006	2015-01-22	2015-12-1	IT
 	+	1007	May 1984	present	IT
@@ -155,7 +163,7 @@ improved safety.
 
 This file contains the name of the base/index file (indicated by
 a leading `base` field), and the names of the (one or more) page
-files (indicated by `page` or `upag`). Each file name must be prepended with
+files (indicated by `page/upag/ulog`). Each file name must be prepended with
 the page name, and may be followed by a description, which will be
 included in the rendered page headers.
 The page name for the index file must be set to `file` for correct syntax.
@@ -165,6 +173,12 @@ Unless the user has editor permission or higher (see below for permissions),
 they can only access page entries with an index field corresponding to
 their own user name. This can be used to let users submit entries from a
 given number of options, or handle their self-supplied data.
+
+Pages with type `ulog` instead of `page` allow for user-dependant
+entries with timestamps: Indices will be generated as username followed
+by underscore `_` and a number-only timestamp, and non-admin users can
+only generate entries with their username as index prefix.
+This can be used for logbook entries of different users.
 
 List files used for populating selection fields are indicated by `list`
 followed by their reference name, file name, and optionally description.
