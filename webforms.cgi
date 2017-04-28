@@ -12,6 +12,8 @@ tmpr=${TMP:-/tmp}/webform-$user-tmp$$
 nowstring=`date '+%y-%m-%d,%H:%M'`
 # same, but as epoch minutes
 nowminutes=$(( `date -u +%s`/60 ))
+# for daystamps
+today=`date '+%Y-%m-%d'`
 
 # save new version of database; arg.1 = modified file, arg.2 = remarks
 # (user name and REMOTE_ADDR will be added to the remarks)
@@ -271,7 +273,8 @@ tablehead(){
 # and use entry in first line beginning with '*'
       field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
-     now=*) field=${field##*=} ;;
+# display description only in case of time-based entries
+     now=*|day=*) field=${field##*=} ;;
     esac
     cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
@@ -338,12 +341,23 @@ EOF
    }
    ;;
   now=*)
-# for "now" timestamp field, offer old and current value
+# offer empty/old/current daytime value
 # (use epoch minutes internally, but remove for selection tag)
    cat <<EOH
   <select name="f$en">
+   <option value=""></option>
    <option value="$field" selected>${field%=*}</option>
    <option value="$nowstring=$nowminutes">$nowstring</option>
+  </select>
+EOH
+   ;;
+  day=*)
+# offer empty/old/current date value
+   cat <<EOH
+  <select name="f$en">
+   <option value=""></option>
+   <option value="$field" selected>${field%=*}</option>
+   <option value="$today">$today</option>
   </select>
 EOH
    ;;
