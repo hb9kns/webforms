@@ -1057,12 +1057,11 @@ EOH
     dobackup "$pagef" "saveentry for $in on $pg"
     cat <<EOH
 <p>OK, done! (+ indicates shown entry, - hidden entry)</p>
-<p>To again edit this entry,
- <a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">click here.</a>
-</p>
-<p>To display the page with the updated entry,
- <a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">click here.</a>
-</p>
+<p>Now you can
+ <a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">edit again</a>
+this entry, or
+ <a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">display the page</a>
+with the modified entry.</p>
 EOH
    else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permeditor</p>
