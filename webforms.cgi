@@ -1056,8 +1056,13 @@ EOH
     cat $tmpf > "$pagef"
     dobackup "$pagef" "saveentry for $in on $pg"
     cat <<EOH
-<p><a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">DONE!</a>
-(+ indicates shown entry, - hidden entry)</p>
+<p>OK, done! (+ indicates shown entry, - hidden entry)</p>
+<p>To again edit this entry,
+ <a href="$myself?db=$db&pg=$pg&in=$in&vw=editentry">click here.</a>
+</p>
+<p>To display the page with the updated entry,
+ <a href="$myself?db=$db&pg=$pg&vw=page&sc=1&sd=1">click here.</a>
+</p>
 EOH
    else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permeditor</p>
