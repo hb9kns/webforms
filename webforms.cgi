@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2017-04-28 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2017-08-10 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -341,21 +341,23 @@ EOF
    }
    ;;
   now=*)
-# offer empty/old/current daytime value
+# offer empty/block/old/current daytime value
 # (use epoch minutes internally, but remove for selection tag)
    cat <<EOH
   <select name="f$en">
-   <option value=""></option>
+   <option value="">[empty]</option>
+   <option value="--">--</option>
    <option value="$field" selected>${field%=*}</option>
    <option value="$nowstring=$nowminutes">$nowstring</option>
   </select>
 EOH
    ;;
   day=*)
-# offer empty/old/current date value
+# offer empty/block/old/current date value
    cat <<EOH
   <select name="f$en">
-   <option value=""></option>
+   <option value="">[empty]</option>
+   <option value="--">--</option>
    <option value="$field" selected>${field%=*}</option>
    <option value="$today">$today</option>
   </select>
