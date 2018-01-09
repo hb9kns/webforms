@@ -315,3 +315,5 @@ including user and remote host information -- be careful about privacy issues!
 - For `vw=editindex` the script tries to generate a new and unique index number, if numerical index values are encountered.
 - Saving an entry for any existing index will overwrite the former content.
 - Entries cannot be deleted by the script; this has to be done manually in the database files.
+- If a file 'help.html' exists in the working directory, it will be linked at the upper right corner of every page generated.
+- If a file 'style.css' exists in the working directory, it will be used as stylefile for every page generated.

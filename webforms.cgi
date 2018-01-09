@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2017-08-10 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2018-01-09 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -42,6 +42,7 @@ defaultfieldchars=' -~'
 
 # help file for linking (may also be nonexistent, then ignored)
 helpfile="./help.html"
+stylefile="./style.css"
 
 ##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
 
@@ -153,6 +154,13 @@ Content-type: text/html
 <html><head><title>$1</title>
 <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
 <META HTTP-EQUIV="Expires" CONTENT="-1">
+EOH
+if test -r "$stylefile"
+then cat <<EOH
+<link rel="stylesheet" type="text/css" href="$stylefile">
+EOH
+fi
+cat <<EOH
 </head>
 <body>
 <p align="right">
