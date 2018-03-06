@@ -92,6 +92,10 @@ all lines of the file `listname` beginning with '+' (only the part after
 TAB is used). This allows to predefine a limited number of possible
 entries for certain fields.
 
+Header fields with `xlist=...` instead of `list=...` allow for
+evaluation of selection fields, which may be a security risk.
+See the example further below for the syntax of list file entries!
+
 Header fields with the structure `now=description` or `day=description`
 will result in the corresponding field being a selection field, with
 options empty, old value, or current time (in minute resolution, for
@@ -154,6 +158,39 @@ when the record file is rendered.
 The selection `black` is only allowed for up to 5 times in a page.
 The other selections have no limits.
 
+#### example evaluation list file
+
+	# evaluate
+	* varia
+	+	blue
+	+	system	=	$DEFCOLOR
+
+The selection `system` will be displayed as the content of the variable
+`$DEFCOLOR` which might be defined in the environment.
+
+Effectively, if the third column (not counting the '+') of a selection
+entry is not empty, it will be evaluated by the webforms script, and
+in this case, the first column is an irrelevant placeholder.
+This allows for dynamic content, e.g a list with entries
+
+	+	--
+	+	now	=	$field
+	+	now	=	$nowstring=$nowminutes
+
+will have the same functionality as a column with a `now=XXXX` header
+(`$field`, `$nowstring` and `$nowminutes` are internals of the script),
+and the entry
+
+	+	host	=	`hostname`
+
+will evaluate to a selection of the current hostname (if this command
+is available to the shell).
+
+**WARNING: Be careful with this powerful type of list,**
+**there might be side effects affecting the script or environment!**
+**Any user who can control such entries in the list file**
+**can execute arbitrary shell commands through the script!**
+
 ### Configuration file
 
 Each collection of webforms is defined by a configuration file with
@@ -181,6 +218,7 @@ only generate entries with their username as index prefix.
 This can be used for logbook entries of different users.
 
 List files used for populating selection fields are indicated by `list`
+(or `xlist` for selections allowing dynamic evaluation)
 followed by their reference name, file name, and optionally description.
 
 File names can be absolute or relative; the starting directory is the
@@ -237,6 +275,7 @@ any error.
 	# in 'phone' page, users below admin level only see their own entries
 	upag	phone	test.phone	Phone numbers
 	list	color	test.color	favourite color
+	xlist	varia	test.eval	various dynamic values
 	list	divis	test.div	company division
 	# uncomment to suppress displaying index/base field in page view
 	#nopageindex	true

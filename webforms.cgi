@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2018-01-09 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2018-03-06 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -277,7 +277,7 @@ tablehead(){
    else echo $nc:$field >>$tmpf
 # if list field, get file name for list file,
     case $field in
-     list=*) ffn="`pagefile list ${field#*=}`"
+     list=*|xlist=*) ffn="`pagefile list ${field#*=}`"
 # and use entry in first line beginning with '*'
       field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
@@ -314,19 +314,29 @@ tableentry(){
   case ${ffn#*:} in
 # if field name is reference to list file ..
 # start selection field
-  list=*) cat <<EOH
+  list=*|xlist=*) cat <<EOH
   <select name="f$en">
 EOH
 # get contents of file with name from field where all up to '=' is removed,
 # only using lines beginning with '+'
     cat "`pagefile list ${ffn#*=}`" | getlines '[+]' | { IFS="	"
-    while read itm maxnum
+    while read itm maxnum xpr
 # and generate options from file contents
 # (sanitizing of file contents not necessary, as done when entry is saved)
 # possibly preselecting option already present in database
     do
+# if expression is non-empty
+     if test "$xpr" != ""
+     then case ${ffn#*:} in
+# and xlist, then evaluate value
+      xlist=*) itm=`eval echo $xpr` ;;
+# else just copy expression (unsatisfying but best solution)
+      *) itm="$xpr" ;;
+      esac
+     fi
 # if there is a limit for this option
-     if test "$maxnum" != ""
+# ('=' or '-' count as no limit, to be used in case of expression)
+     if test "$maxnum" != "" -a "$maxnum" != "=" -a "$maxnum" != "-"
      then
 # get all other active entries of this field, filter for this option, and count
       if test `grepothers "$in" <"$pagef" | getlines '[+]' | cut -f $fn | grep "$itm" | wc -l` -ge $maxnum
