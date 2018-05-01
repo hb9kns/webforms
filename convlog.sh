@@ -1,6 +1,6 @@
 #!/bin/sh
 # shell script for converting logfiles created with webforms
-info='convlog.sh // 2018-04-25 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='convlog.sh // 2018-05-01 Y.Bonetti // http://github.com/hb9kns/webforms'
 
 # minutes/day
 dm=$(( 24*60 ))
@@ -55,8 +55,6 @@ begcol=$(( $tocol+1 ))
 endcol=$(( $tocol+2 ))
 fmcol=$(( $tocol+3 ))
 
-exit
-
 while read inpt
 do
 # get line parts before and after time stamp
@@ -65,32 +63,52 @@ do
 # get timestamp parts
  begval=`echo "$inpt" | cut -f $begcol`
  endval=`echo "$inpt" | cut -f $endcol`
+ case $inpt in
+# if line begins with *
+# output header line with additional column (note: TABs!)
+ \**) cat <<EOT
+$front	$begval	$endval	minutes	$rear
+EOT
+  ;;
+# if line begins with +/-
+ -*|+*)
+#echo ":: $front :: '$begval' -- '$endval' :: $rear //" >&2
 # get minute values: remove everything up to '=' from timestamp
- begmin=${begval##*=}
- endmin=${endval##*=}
-# check for numerical begin minutes
- if echo $(( $begmin+0 )) >/dev/null
- then
-# check for numerical end minutes
-  if echo $(( $endmin+0 )) >/dev/null
-# if ok, use difference between column entries
-  then effmin=$(( $endmin-$begmin ))
-# otherwise, use max.value (depending on whether -m or -d option)
-  else if test $maxmin -lt 0
-   then effmin=$(( $dm-$daymin-$begmin ))
-   else effmin=$maxmin
-   fi
+# and set to 0, if no '=' found
+  begmin=${begval##*=}
+  if test "$begmin" = "$begval"
+  then begmin=0
   fi
+  endmin=${endval##*=}
+  if test "$endmin" = "$endval"
+  then endmin=0
+  fi
+# check for numerical begin minutes
+  if echo $(( $begmin+0 )) >/dev/null
+  then
+# check for numerical end minutes
+   if echo $(( $endmin+0 )) >/dev/null
+# if ok, use difference between column entries
+   then effmin=$(( $endmin-$begmin ))
+# otherwise, use max.value (depending on whether -m or -d option)
+   else if test $maxmin -lt 0
+    then effmin=$(( $dm-$daymin-$begmin ))
+    else effmin=$maxmin
+    fi
+   fi
 # output line with additional column (note: TABs!)
-  cat <<EOT
+   cat <<EOT
 $front	$begval	$endval	$effmin	$rear
 EOT
 # if invalid, just echo entire line with prepended warning and max value
 # (note: TABs!)
- else cat <<EOT
+  else cat <<EOT
 # ## no valid minutes for begin: $begmin
 $front	$begval	$endval	$maxmin	$rear
 EOT
- fi
-
+  fi
+  ;;
+# echo all other lines
+ *) echo "$inpt" ;;
+ esac
 done
