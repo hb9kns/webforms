@@ -12,10 +12,11 @@ $info
 
 convert logfile (from STDIN) generated with webforms.cgi
 
-usage: $0 [-m MM|-d NN] <c>
+usage: $0 [-m MM|-n] [-x XX] <c>
  convert STDIN using columns <c> and <c+1> with absolute minute stamps,
- adding value=(<c+1>)-(<c>) in column <c+2>, using maximum value MM or
- value=$dm-NN-(<c>) if <c+1> is unreadable as minute stamp,
+ adding (<c+1>)-(<c>) in column <c+2>, using maximum value MM (-m)
+ or $dm-(<c>) (-n, midnight logout) if <c+1> is unreadable as minutes,
+ using maximum value XX (-x, or $dm if not given),
  keeping all other columns and printing to STDOUT
  Notes:
  - assumes first column <0> contains flag (+/-/*) which will be ignored
@@ -26,27 +27,31 @@ EOT
 exit 9
 fi
 
-# invalidate all options
+# preset all options to invalid or maximum
 daymin=-1
 maxmin=-1
+maxmax=$dm
 
 while test "$1" != ""
 do
  case $1 in
-# only last option is valid
- -d) daymin=${2:-0} ; maxmin=-1 ; shift ;;
+# only one option of -m or -n is valid
+ -n) daymin=0 ; maxmin=-1 ;;
  -m) maxmin=${2:-0} ; daymin=-1 ; shift ;;
+# absolute maximum in minutes
+ -x) maxmax=${2:-$dm} ; shift ;;
  *) begcol=$1 ;;
  esac
  shift
 done
 
 cat <<EOI >&2
-## $0
-## logical timestamp start column: $begcol
-## daymin: $daymin
-## maxmin: $maxmin
-## processing...
+: $0
+: logical timestamp start column: $begcol
+: daymin: $daymin
+: maxmin: $maxmin
+: maxmax: $maxmax
+: processing...
 EOI
 
 # physical columns up to, begin, end, from/after time stamp
@@ -83,30 +88,30 @@ EOT
   if test "$endmin" = "$endval"
   then endmin=0
   fi
-# check for numerical begin minutes
-  if echo $(( $begmin+0 )) >/dev/null
-  then
-# check for numerical end minutes
-   if echo $(( $endmin+0 )) >/dev/null
-# if ok, use difference between column entries
-   then effmin=$(( $endmin-$begmin ))
-# otherwise, use max.value (depending on whether -m or -d option)
-   else if test $maxmin -lt 0
-    then effmin=$(( $dm-$daymin-$begmin ))
-    else effmin=$maxmin
-    fi
+# preset upper limit to one day
+  limmin=$dm
+# check for numerical begin and end minutes
+  if echo $(( $begmin+0 )) >/dev/null && echo $(( $endmin+0 )) >/dev/null
+  then effmin=$(( $endmin-$begmin ))
+# calculate upper limit as max.minutes or minutes up to midnight
+   if test $maxmin -lt 0
+   then limmin=$(( $dm-$daymin-$begmin ))
+   else limmin=$maxmin
    fi
+  else effmin=-1
+  fi
+# in case of illegal minutes (negative or more than a day)
+  if test $effmin -le 0 -o $effmin -gt $dm
+  then effmin=$limmin
+  fi
+# limit value
+  if test $effmin -gt $maxmax
+  then effmin=$maxmax
+  fi
 # output line with additional column (note: TABs!)
    cat <<EOT
 $front	$begval	$endval	$effmin	$rear
 EOT
-# if invalid, just echo entire line with prepended warning and max value
-# (note: TABs!)
-  else cat <<EOT
-# ## no valid minutes for begin: $begmin
-$front	$begval	$endval	$maxmin	$rear
-EOT
-  fi
   ;;
 # echo all other lines
  *) echo "$inpt" ;;
