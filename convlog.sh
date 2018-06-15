@@ -12,16 +12,17 @@ $info
 
 convert logfile (from STDIN) generated with webforms.cgi
 
-usage: $0 [-m MM|-n] [-x XX] <c>
+usage: $0 [-s] [-m MM|-n] [-x XX] <c>
  convert STDIN using columns <c> and <c+1> with absolute minute stamps,
  adding (<c+1>)-(<c>) in column <c+2>, using maximum value MM (-m)
  or $dm-(<c>) (-n, midnight logout) if <c+1> is unreadable as minutes,
  using maximum value XX (-x, or $dm if not given),
- keeping all other columns and printing to STDOUT
+ keeping all other columns and printing to STDOUT,
+ not adding column <c+2> in case of option -s
  Notes:
  - assumes first column <0> contains flag (+/-/*) which will be ignored
  - column counting starts at 1 which is effectively the *second* column
- - if several options are given, the last has priority
+ - if several options or columns are given, the last will be used
 
 EOT
 exit 9
@@ -31,6 +32,7 @@ fi
 daymin=-1
 maxmin=-1
 maxmax=$dm
+same=no
 
 while test "$1" != ""
 do
@@ -40,6 +42,7 @@ do
  -m) maxmin=${2:-0} ; daymin=-1 ; shift ;;
 # absolute maximum in minutes
  -x) maxmax=${2:-$dm} ; shift ;;
+ -s) same=yes ; shift ;;
  *) begcol=$1 ;;
  esac
  shift
@@ -70,10 +73,15 @@ do
  endval=`echo "$inpt" | cut -f $endcol`
  case $inpt in
 # if line begins with *
-# output header line with additional column (note: TABs!)
- \**) cat <<EOT
+# output header line with additional column (note: TABs!) unless option -s
+ \**) if test $same = no
+  then cat <<EOT
 $front	$begval	$endval	minutes	$rear
 EOT
+  else cat <<EOT
+$front	$begval	$endval	$rear
+EOT
+  fi
   ;;
 # if line begins with +/-
  -*|+*)
@@ -108,12 +116,17 @@ EOT
   if test $effmin -gt $maxmax
   then effmin=$maxmax
   fi
-# output line with additional column (note: TABs!)
-   cat <<EOT
+# output line with additional column (note: TABs!) unless option -s
+  if test $same = no
+  then cat <<EOT
 $front	$begval	$endval	$effmin	$rear
 EOT
+  else cat <<EOT
+$front	$begval	$endval	$rear
+EOT
+  fi
   ;;
-# echo all other lines
+# echo all other lines (comments)
  *) echo "$inpt" ;;
  esac
 done

@@ -5,8 +5,8 @@ info='webforms.cgi // 2018-03-06 Y.Bonetti // http://gitlab.com/yargo/webforms'
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
 # there is an 'rm -f $tmpr*' command at the end of the script!)
-# if `$TMP` contains whitespace or other crap, anything might happen!
-tmpr=${TMP:-/tmp}/webform-$user-tmp$$
+# if `$TMPDIR` contains whitespace or other crap, anything might happen!
+tmpr=${TMPDIR:-/tmp}/webform-$user-tmp$$
 
 # generate string for time stamp, suitable as index
 nowstring=`date '+%y-%m-%d,%H:%M'`
