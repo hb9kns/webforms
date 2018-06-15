@@ -15,13 +15,12 @@ $info
 force logfile entries using convlog script
 with in-place modification and file locking
 
-usage: $0 logfile <convlog script> <arguments to convlog>
- convert logfile using <convlog script> with -s option,
- i.e not adding column with minutes difference, and printing to logfile
+usage: $0 <logfile> <convlog script> <arguments to convlog>
+ convert logfile in-place using <convlog script> with -s option
  Notes:
  - <convlog script> must be name of executable script, e.g './convlog.sh'
  - see convlog.sh usage for additional arguments/options
- - if logfile is given as `-` then read from STDIN and print to STDOUT
+ - logfile '-' means to read from STDIN and print to STDOUT (pipe mode)
 
 EOT
 exit 9
