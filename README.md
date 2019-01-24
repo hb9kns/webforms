@@ -94,6 +94,8 @@ entries for certain fields.
 
 Header fields with `xlist=...` instead of `list=...` allow for
 evaluation of selection fields, which may be a security risk.
+(This feature is deactivated by default, and must be activated by
+setting the appropriate flag at the beginning of the source code.)
 See the example further below for the syntax of list file entries!
 
 Header fields with the structure `now=description` or `day=description`
