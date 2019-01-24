@@ -1,12 +1,15 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2018-03-06 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2019-01-24 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
 # there is an 'rm -f $tmpr*' command at the end of the script!)
 # if `$TMPDIR` contains whitespace or other crap, anything might happen!
 tmpr=${TMPDIR:-/tmp}/webform-$user-tmp$$
+
+# set to yes for activating xlist= feature -- Caution: might be dangerous!
+xlists=no
 
 # generate string for time stamp, suitable as index
 nowstring=`date '+%y-%m-%d,%H:%M'`
@@ -325,8 +328,8 @@ EOH
 # (sanitizing of file contents not necessary, as done when entry is saved)
 # possibly preselecting option already present in database
     do
-# if expression is non-empty
-     if test "$xpr" != ""
+# if expression is non-empty and xlist permitted
+     if test "$xpr" != "" -a $xlists = yes
      then case ${ffn#*:} in
 # and xlist, then evaluate value
       xlist=*) itm=`eval echo $xpr` ;;
