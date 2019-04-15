@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2019-01-24 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2019-04-15 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -285,7 +285,8 @@ tablehead(){
       field="`cat "$ffn" | getlines '[*]' | sed -e 's/	.*//' | head -n 1`"
       ;;
 # display description only in case of time-based entries
-     now=*|day=*) field=${field##*=} ;;
+# ("now*=" to permit delta time values like "now,5,10=")
+     now*=*|day=*) field=${field##*=} ;;
     esac
     cat <<EOH
 <th><a href="$myself?db=$db&pg=$pg&vw=$vw&sc=$nc&sd=$nd&fa=$fa">$field</a></th>
@@ -361,8 +362,8 @@ EOF
    echo '   </select>'
    }
    ;;
-  now=*)
-# offer empty/block/old/current daytime value
+  now*=*)
+# offer empty/block/old/current/delta daytime value
 # (use epoch minutes internally, but remove for selection tag)
    cat <<EOH
   <select name="f$en">
@@ -370,6 +371,16 @@ EOF
    <option value="--">--</option>
    <option value="$field" selected>${field%=*}</option>
    <option value="$nowstring=$nowminutes">$nowstring</option>
+EOH
+# get delta time values if present, only numbers, separated by spaces, set as arguments
+   set -- `echo ${ffn#*:now} | sed -e 's/=.*//;' | tr -c '0-9' ' '`
+   while test $# -gt 0
+   do cat <<EOD
+   <option value="$nowstring+${1}min=$(( $nowminutes+$1 ))">$nowstring +$1 min</option>
+EOD
+    shift
+   done
+   cat <<EOH
   </select>
 EOH
    ;;
