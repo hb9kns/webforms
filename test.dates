@@ -1,5 +1,5 @@
 # entrance and leave database
-*	PersNr	Arrival date	Departure date	list=divis
+*	PersNr	day=Arrival	day=Departure	list=divis
 +	1008	sooner	later	HR
 +	1006	2015-01-22	2015-12-1	IT
 +	1007	May 1984	present	IT

@@ -106,6 +106,12 @@ the time will be followed by `=NNNN` where `NNNN` is the epoch time
 (in general since Jan.1st 1970 UTC) in minutes; this can be used for
 logbook applications to calculate time differences.
 
+In addition, `now=` fields may also be of the form `now,1,2,3=` where
+`1,2,3` set additional options with "delta times", i.e the current time
+plus 1, 2 or 3 minutes, e.g `now,30,60=end` defines a selection field
+with additional options "current time plus 30 min" and "current time
+plus 60 min".
+
 Page entries with leading `-` normally are not displayed when the
 page is rendered, but they can be "un-hidden," and also be edited.
 
@@ -358,3 +364,8 @@ including user and remote host information -- be careful about privacy issues!
 - Entries cannot be deleted by the script; this has to be done manually in the database files.
 - If a file 'help.html' exists in the working directory, it will be linked at the upper right corner of every page generated.
 - If a file 'style.css' exists in the working directory, it will be used as stylefile for every page generated.
+- If a file 'favicon.ico' exists in the working directory, it will be used as icon file for every page generated.
+
+---
+
+*2019-5-1 // Y.Bonetti*
