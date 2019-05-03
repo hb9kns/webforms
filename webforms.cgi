@@ -23,11 +23,11 @@ today=`date '+%Y-%m-%d'`
 dobackup(){
  dmesg="$2 (user=$usr, remote=$REMOTE_ADDR)"
 # comment/uncomment below as desired! commenting out all is also possible
-## git version
- #git add "$1" && git commit -m "$dmesg"
-## rcs version
- #ci -l -w"$usr" -m"$dmesg" "$1"
-## poor man's version -- if commenting, do all lines of <<EOH document!
+# (git version:)
+# git add "$1" && git commit -m "$dmesg"
+# (rcs version:)
+# ci -l -w"$usr" -m"$dmesg" "$1"
+# (poor man's version -- if commenting, do all lines of HERE/<<EOH document!)
  cat <<EOH >>"$1.diff"
 
 ## $nowstring : $dmesg
@@ -49,7 +49,7 @@ helpfile="./help.html"
 stylefile="./style.css"
 iconfile="./favicon.ico"
 
-##### ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! #####
+# # # ONLY CHANGE BELOW IF YOU KNOW WHAT YOU ARE DOING! # # #
 
 REQUEST_METHOD=`echo $REQUEST_METHOD | tr a-z A-Z`
 if test "$REQUEST_METHOD" != "POST" -a "$REQUEST_METHOD" != "GET"
@@ -89,7 +89,7 @@ cat $tmpf | tr '+;&' '
  s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;s/%40/@/g;
  s/%25/%/g" >$inpt
 
-### first define some functions
+# # first define some functions
 
 # end script after cleanup with exit code as arg.1
 finish(){
@@ -129,12 +129,15 @@ inptvar(){
  grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//' | tr -c -d "$permchar"
 }
 
+# # # NB: a lot of sed and grep patterns contain TAB and SPC characters!
+
 # get lines beginning with a value, and remove that column,
 #  after deleting all comment lines (#)
 # note TAB in sed and grep pattern: make sure there is a TAB,
 #  and that the value is complete
 getlines(){
- sed -e '/^#/d;s/$/	/' | grep "^$1[	]" | { IFS="	" # record separator TAB only
+# record separator TAB only
+ sed -e '/^#/d;s/$/	/' | grep "^$1[	]" | { IFS="	"
  while read _ values
 # remove trailing added TAB
  do echo "${values%	}"
@@ -211,7 +214,8 @@ running on <tt>`hostname`</tt>
 </i></small></p>
 <pre>
 EOH
-# cat $inpt # uncomment for debugging
+# uncomment for debugging
+# cat $inpt
 cat <<EOH
 </pre>
 </body>
@@ -229,7 +233,7 @@ EOH
 pagefile(){
  local pf
 # get file name
- getlines "$1" <"$cfg" | getlines $2 | { IFS="	" # TAB
+ getlines "$1" <"$cfg" | getlines $2 | { IFS="	"
   read pf _
 # sanitize
   pf=`echo $pf | tr -c -d '0-9.A-Za-z_/-'`
@@ -244,7 +248,7 @@ pagefile(){
 
 # get page info for arg.1=type, arg.2=page
 pageinfo(){
- getlines $1 <"$cfg" | getlines $2 | { IFS="	" # TAB
+ getlines $1 <"$cfg" | getlines $2 | { IFS="	"
   read _ pinfo
   echo "$pinfo"
  }
@@ -270,7 +274,7 @@ tablehead(){
  fi
  echo '<table><tr>'
 # get first line beginning with '*' ('[*]' for grep pattern),
-# and inject $idxf after index (note <TAB>s in sed patterns),
+# and inject $idxf after index (note TABs in sed patterns),
 # and convert into list with each field on a separate line for `while read`
  getlines '[*]' <"$1" | head -n 1 | sed -e "s|	|	$idxf|" -e 's/	/\
 /g' | { while read field
@@ -479,7 +483,7 @@ grepothers(){
 renderindices(){
  local pastind i ofs
  ofs="$IFS"
- IFS="	" # TAB
+ IFS="	"
  i=${maxindex:-1}
  while read in desc
 # use index for link to edit view, marked with tags
@@ -547,7 +551,7 @@ showindexrepl(){
  echo "$out" | sed -e 's/	:/	\\/g'
 }
 
-### now preparations for the main script!
+# # now preparations for the main script!
 
 # set root for configuration files / working directory
 # (this could be set to some hardcoded directory for improved security)
@@ -594,9 +598,12 @@ else
    fi
 # otherwise all unknown users are visitors
   else perms=$permvisitor
-  fi # visitor
- fi # editor
-fi # admin
+# visitor:
+  fi
+# editor:
+ fi
+# admin:
+fi
 
 # define link field for page view
 nopageindex=0
@@ -660,7 +667,7 @@ if test "$pg" = "" -a "$vw" = "page"
 then vw=listpages
 fi
 
-### now the real work!
+# # now the real work!
 
 # additional filter depending on REMOTE_USER normally inactive (pass all)
 usrfilter='.*'
@@ -729,7 +736,7 @@ EOH
     if test "$showindex" = ""
 # if no showindex, just copy everything
     then cat
-    else IFS="	" # TAB
+    else IFS="	"
      while read in rem
 # else insert showindex fields after index
      do ins=`getlines "$in" <$tmpi | head -n 1`
@@ -737,7 +744,7 @@ EOH
      done
     fi
 # sort
-   } | fieldsort | { IFS="	" # TAB
+   } | fieldsort | { IFS="	"
     count=0
     while read in f1 desc
 # create link to edit view
@@ -780,12 +787,13 @@ EOH
 <p>Sorry, but page "$pg" of type "$ptype" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
   fi
-  footer ;; # page.
+  footer ;;
+# page.
 
  listpages)
   header "available pages" "List of Available Pages" "This is the list of all pages available for database <tt>$db</tt>."
   echo '<table><tr><th>name</th><th><i>description</i></th></tr>'
-  getlines 'page\|upag\|ulog' <"$cfg" | { IFS="	" # TAB
+  getlines 'page\|upag\|ulog' <"$cfg" | { IFS="	"
    while read name file desc
    do cat <<EOH
 <tr>
@@ -795,7 +803,8 @@ EOH
    done
    }
   echo '</table>'
-  footer ;; # listpages.
+  footer ;;
+# listpages.
 
  listindex) 
   header "index" "List of Index/Base Values" "This is the list of all index/base values available for database '<tt>$db</tt>'. Inactive/hidden indices are marked like <strike>this</strike>, active ones like <b>this</b>.<br />Select links in first column to edit."
@@ -818,7 +827,8 @@ EOH
  <a href="$myself?db=$db&pg=$pg&in=$maxindex&vw=editindex">new index entry</a>
 </p>
 EOH
-  footer ;; # listindex.
+  footer ;;
+# listindex.
 
  descindex)
   header "index/base $in" 'Index/base description' "Values associated with index <tt>$in</tt>"
@@ -828,7 +838,8 @@ EOH
   cat <<EOH
 <p><a href="$myself?db=$db&pg=$pg&in=$in&vw=editindex">EDIT</a></p>
 EOH
-  footer ;; # descindex.
+  footer ;;
+# descindex.
 
  editindex)
   header "edit index" "Edit index/base fields" "Edit fields and SAVE.<br />Notes: first field (index) must be unique, will overwrite old entry if already present! To suppress listing of this index on record page, deselect SHOW."
@@ -858,7 +869,8 @@ SHOW<input type="checkbox" name="fa" value="show" checked />
  <input type="submit" name="submit" value="SAVE" />
  </form>
 EOH
-  footer ;; # editindex.
+  footer ;;
+# editindex.
 
  saveindex)
   header "saveindex" "Saving index entry" "Attempting to save index $in ..."
@@ -942,14 +954,16 @@ EOH
      done
      echo '</ul>'
      }
-    fi # apply to all pages.
+    fi
+# (apply to all pages.)
    else cat <<EOH
 <p>FAILED due to bad permissions $perms &lt; $permadmin</p>
 EOH
    fi
   fi
   releasefile "$inlock"
-  footer ;; # saveindex.
+  footer ;;
+# saveindex.
 
  editentry)
   header 'edit entry' "Edit entry for page <tt>$pg</tt>" "Edit fields and SAVE, uncheck SHOW to hide entry"
@@ -977,7 +991,8 @@ EOH
 # get number of rendered header fields reported by 'tablehead'
    totalcols=$?
    case $ptype in
-   page) # in case of normal page
+   page)
+# in case of normal page
 # add empty option value (to fail if nothing selected)
    cat <<EOH
  <tr><td><select name="in"><option value=""> </option>
@@ -1005,14 +1020,16 @@ EOH
  </select></td>
 EOH
    ;;
-   upag) # in case of user page
+   upag)
+# in case of user page
     cat <<EOH
  <tr><td>
  <input type="text" name="in" value="$in" maxlength="$maxflength" $af />
  </td>
 EOH
    ;;
-   ulog) # in case of ulog page, add number-only timestamp if missing
+   ulog)
+# in case of ulog page, add number-only timestamp if missing
     if test "$in" = "" -o "$in" = "$usr"
     then in="${usr}_`echo $nowstring|tr -c -d '0-9'`"
     fi
@@ -1041,7 +1058,8 @@ EOH
 <p>Sorry, but page "$pg" with <b>file name "$pagef" cannot be read!</b></p>
 EOH
   fi
-  footer ;; # editentry.
+  footer ;;
+# editentry.
 
  saveentry)
   header 'save entry' "Saving page entry" "Attempting to save entry for index '$in' on page $pg ..."
@@ -1111,9 +1129,11 @@ EOH
    fi
   fi
   releasefile "$inlock"
-  footer ;; # saveentry.
+  footer ;;
+# saveentry.
 
- *) # default
+ *)
+# default
   header "$myself" "$myself $db" ""
   footer ;;
 esac
