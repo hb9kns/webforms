@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2019-05-01 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2019-05-03 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -129,11 +129,12 @@ inptvar(){
  grep "^$1=" $inpt | head -n 1 | sed -e 's/[^=]*=//' | tr -c -d "$permchar"
 }
 
-# get lines beginning with a value, and remove that column
+# get lines beginning with a value, and remove that column,
+#  after deleting all comment lines (#)
 # note TAB in sed and grep pattern: make sure there is a TAB,
 #  and that the value is complete
 getlines(){
- sed -e 's/$/	/' | grep "^$1[	]" | { IFS="	" # record separator TAB only
+ sed -e '/^#/d;s/$/	/' | grep "^$1[	]" | { IFS="	" # record separator TAB only
  while read _ values
 # remove trailing added TAB
  do echo "${values%	}"
