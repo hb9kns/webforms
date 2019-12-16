@@ -569,6 +569,16 @@ then fatal "configuration file $cfg not readable"
  exit 9
 fi
 
+# if maintenance entry is active, print message and abort execution
+maintuntil=`getlines maintenance <"$cfg"`
+if test "$maintuntil" != ""
+then
+ header MAINTENANCE 'database not available' "under maintenance, probably until $maintuntil"
+ echo '<p><em>You may try to reload the page, when the database is available again.<em></p>'
+ footer
+ finish 0
+fi
+
 # define index/base file name
 idx=`pagefile base file <"$cfg"`
 if test ! -r "$idx"
