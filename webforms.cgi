@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2019-05-03 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2019-12-16 Y.Bonetti // http://gitlab.com/yargo/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -43,8 +43,8 @@ EOH
 # will be used as 'tr' pattern
 defaultfieldchars=' -~'
 
-# help file for linking (may also be nonexistent, then ignored)
-helpfile="./help.html"
+# default help file (may also be nonexistent, then ignored)
+defhelp="./help.html"
 
 stylefile="./style.css"
 iconfile="./favicon.ico"
@@ -180,7 +180,7 @@ cat <<EOH
 <p align="right">
 <tt>`date '+%a %Y-%m-%d %H:%M'` // db=$db // $usr($perms)</tt>
 EOH
-if test -r "$helpfile"
+if test "$helpfile" != ""
 then cat <<EOH
 :: <a href="$helpfile">Help</a>
 EOH
@@ -237,10 +237,11 @@ pagefile(){
   read pf _
 # sanitize
   pf=`echo $pf | tr -c -d '0-9.A-Za-z_/-'`
-# don't change, if it starts with '/' or is empty (i.e nothing found)
+# don't change, if it starts with '/' or '.' or is empty (i.e nothing found)
 # else prepend webform root directory
   case $pf in
    /*) echo "$pf" ;;
+   .*) echo "$pf" ;;
    ?*) echo "$wdir/$pf"
   esac
  }
@@ -622,6 +623,13 @@ fi
 # define warning for empty fields
 emptywarn=`getlines emptywarn <"$cfg" | head -n 1`
 emptywarn=${emptywarn:-' '}
+
+# define helpfile
+helpfile="`pagefile help file <"$cfg" | head -n 1`"
+# if undefined, use default
+if test "$helpfile" = ""
+then helpfile="$defhelp"
+fi
 
 # define logfile
 logfile="`pagefile log file <"$cfg" | head -n 1`"
