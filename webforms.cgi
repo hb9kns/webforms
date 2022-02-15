@@ -1,6 +1,6 @@
 #!/bin/sh
 # CGI script for handling flat file databases with common index/base
-info='webforms.cgi // 2019-12-16 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='webforms.cgi // 2019-12-16 Y.Bonetti // http://github.com/hb9kns/webforms'
 
 # set root for temporary files
 # (make sure this is a pattern only for temporary files, because
@@ -83,7 +83,7 @@ echo "$QUERY_STRING" >>$tmpf
 # then permitted escaped characters (restricted for security reasons)
 cat $tmpf | tr '+;&' ' 
 ' | sed -e "s/%C2%B0/deg/g;s/%B0/deg/g;
- s/%2B/+/g;s/%22/\"/g;s/%26/&/g;s/%2F/\//g;s/%28/(/g;s/%29/)/g;s/%3D/=/g;
+ s/%2B/+/g;s/%22/'/g;s/%26/&/g;s/%2F/\//g;s/%28/(/g;s/%29/)/g;s/%3D/=/g;
  s/%3F/?/g;s/%27/'/g;s/%5E/^/g;s/%7E/~/g;s/%3C/</g;s/%3E/>/g;
  s/%7B/{/g;s/%7D/}/g;s/%5B/[/g;s/%5C/\//g;s/%5D/]/g;s/%21/!/g;s/%24/\$/g;
  s/%2C/,/g;s/%3B/;/g;s/%3A/:/g;s/%23/#/g;s/%7C/|/g;s/%60/'/g;s/%40/@/g;

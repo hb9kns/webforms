@@ -1,7 +1,7 @@
 #!/bin/sh
 # shell script for forcing illegal logfiles timestamps into limits
 # reusing parts of webforms.cgi (file locking and backup routines)
-info='forcelog.sh // 2018-06-15 Y.Bonetti // http://gitlab.com/yargo/webforms'
+info='forcelog.sh // 2018-06-15 Y.Bonetti // http://github.com/hb9kns/webforms'
 
 # presets for reusing of webforms.cgi backup routine
 REMOTE_ADDR=${HOSTNAME:-localhost}
